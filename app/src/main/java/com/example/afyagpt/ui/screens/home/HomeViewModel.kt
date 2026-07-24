@@ -6,6 +6,7 @@ import com.example.afyagpt.data.local.entity.PatientEntity
 import com.example.afyagpt.data.preferences.UserPreferences
 import com.example.afyagpt.data.repository.AuthRepository
 import com.example.afyagpt.data.repository.PatientRepository
+import com.example.afyagpt.data.repository.SyncRepository
 import com.example.afyagpt.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,13 +26,15 @@ data class HomeUiState(
     val totalPatientsToday: Int = 0,
     val pendingFollowUps: Int = 0,
     val recentPatients: List<PatientEntity> = emptyList(),
-    val isLoggedOut: Boolean = false
+    val isLoggedOut: Boolean = false,
+    val syncMessage: String? = null
 )
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val patientRepository: PatientRepository,
+    private val syncRepository: SyncRepository,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
@@ -64,7 +67,33 @@ class HomeViewModel @Inject constructor(
                         user = user,
                         isLoading = false,
                         recentPatients = recentList,
-                        totalPatientsToday = recentList.size
+                        totalPatientsToday = recentList.size,
+                        unsyncedRecords = recentList.size
+                    )
+                }
+            }
+        }
+    }
+
+    /** Triggers a manual sync of all local patient data to Heroku backend. */
+    fun syncNow() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            val result = syncRepository.syncOfflineData()
+            if (result.isSuccess) {
+                val count = result.getOrDefault(0)
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        unsyncedRecords = 0,
+                        syncMessage = "Successfully synced $count records to server!"
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        syncMessage = "Sync failed: ${result.exceptionOrNull()?.message}"
                     )
                 }
             }

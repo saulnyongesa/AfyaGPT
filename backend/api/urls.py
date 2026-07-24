@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
     UserProfileViewSet, PatientViewSet,
-    TriageSessionViewSet, VaccinationViewSet, ChatMessageViewSet
+    TriageSessionViewSet, VaccinationViewSet, ChatMessageViewSet,
+    AuthRegisterView, AuthLoginView, BatchSyncView
 )
 
 router = DefaultRouter()
@@ -13,5 +14,8 @@ router.register(r'vaccinations', VaccinationViewSet)
 router.register(r'chat', ChatMessageViewSet)
 
 urlpatterns = [
+    path('auth/register/', AuthRegisterView.as_view(), name='auth_register'),
+    path('auth/login/', AuthLoginView.as_view(), name='auth_login'),
+    path('sync/', BatchSyncView.as_view(), name='batch_sync'),
     path('', include(router.urls)),
 ]

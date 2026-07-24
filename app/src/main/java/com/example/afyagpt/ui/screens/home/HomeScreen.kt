@@ -212,7 +212,7 @@ fun HomeScreen(
                             message = "You have ${state.unsyncedRecords} records waiting to sync.",
                             type = BannerType.WARNING,
                             actionLabel = "Sync Now",
-                            onAction = { }
+                            onAction = viewModel::syncNow
                         )
                     }
                 }

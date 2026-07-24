@@ -9,6 +9,10 @@ class UserProfile(models.Model):
     professional_number = models.CharField(max_length=100, blank=True, null=True)
     facility_name = models.CharField(max_length=255)
     county = models.CharField(max_length=100)
+    sub_county = models.CharField(max_length=100, blank=True, null=True)
+    ward = models.CharField(max_length=100, blank=True, null=True)
+    malaria_risk_zone = models.CharField(max_length=50, default='HIGH')
+    pin_hash = models.CharField(max_length=255, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -36,7 +40,7 @@ class Patient(models.Model):
 
 class TriageSession(models.Model):
     """WHO IMCI Triage Assessment session model."""
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_with='triage_sessions')
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='triage_sessions')
     danger_signs = models.TextField(blank=True, default='')
     temperature = models.FloatField(blank=True, null=True)
     respiratory_rate = models.IntegerField(blank=True, null=True)
@@ -57,7 +61,7 @@ class TriageSession(models.Model):
 
 class Vaccination(models.Model):
     """KEPI Immunization log model."""
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_with='vaccinations')
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='vaccinations')
     vaccine_name = models.CharField(max_length=100)
     target_disease = models.CharField(max_length=255)
     dose_number = models.IntegerField(default=1)
@@ -71,7 +75,7 @@ class Vaccination(models.Model):
 
 class ChatMessage(models.Model):
     """AfyaGPT AI Decision Support conversation history model."""
-    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_with='chat_messages', blank=True, null=True)
+    patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='chat_messages', blank=True, null=True)
     sender = models.CharField(max_length=20, choices=[('USER', 'USER'), ('AI', 'AI')])
     message_text = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
