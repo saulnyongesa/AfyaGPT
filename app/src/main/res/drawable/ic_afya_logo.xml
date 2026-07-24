@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ic_afya_logo.xml — AfyaGPT App Logo
+    A medical cross (plus sign) with a subtle pulse line, representing
+    health intelligence. Used on the splash screen and in the top bar.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="120"
+    android:viewportHeight="120">
+
+    <!-- Outer circle background -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M60,60m-54,0a54,54 0,1 1,108 0a54,54 0,1 1,-108 0" />
+
+    <!-- Medical cross — vertical bar -->
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M52,28 L68,28 L68,52 L52,52 Z" />
+
+    <!-- Medical cross — horizontal bar -->
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M28,52 L92,52 L92,68 L28,68 Z" />
+
+    <!-- Medical cross — lower vertical bar -->
+    <path
+        android:fillColor="#1A73E8"
+        android:pathData="M52,68 L68,68 L68,92 L52,92 Z" />
+
+    <!-- Pulse / ECG accent line in gold -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFC107"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M20,60 L34,60 L38,48 L42,72 L46,55 L50,60 L70,60 L74,48 L78,72 L82,55 L86,60 L100,60" />
+
+</vector>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    AndroidManifest.xml — AfyaGPT Application Manifest
+
+    Declares the application component, activities, and required permissions.
+    The app is offline-first so internet is requested but not required.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Internet permission — required for future Django backend sync (Phase 13) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Network state — check connectivity before attempting sync -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Location — used for GPS coordinates in household registration (Phase 10) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Camera — used for patient photo capture and QR code scanning -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <!-- Exact alarms — for vaccine and follow-up reminder notifications -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <!-- Post notifications — for follow-up and stock alerts (Android 13+) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Vibrate — for haptic feedback on PIN entry and navigation -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <application
+        android:name=".AfyaGPTApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AfyaGPT"
+        tools:targetApi="31">
+
+        <!--
+            MainActivity — Single Activity architecture.
+            All navigation is handled within this activity via Jetpack Navigation Compose.
+            The splash screen theme (Theme.AfyaGPT.Starting) is applied to avoid
+            a white flash before the compose content is ready.
+        -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:theme="@style/Theme.AfyaGPT.Starting"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

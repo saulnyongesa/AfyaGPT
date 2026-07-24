@@ -1,0 +1,130 @@
+<resources>
+    <!-- ══════════════════════════════════════════════════════════════
+         strings.xml — AfyaGPT String Resources
+         All user-facing text is defined here for future localization
+         (English is the default; Swahili will be added in Phase 3).
+         ══════════════════════════════════════════════════════════════ -->
+
+    <!-- App Identity -->
+    <string name="app_name">AfyaGPT</string>
+    <string name="app_tagline">Health Intelligence for Every Community</string>
+    <string name="app_version">v1.0.0</string>
+
+    <!-- Auth — Sign Up -->
+    <string name="signup_title">Create Account</string>
+    <string name="signup_subtitle">Join AfyaGPT to start helping communities</string>
+    <string name="signup_section_personal">Personal Information</string>
+    <string name="signup_section_facility">Facility Information</string>
+    <string name="signup_section_security">Security</string>
+    <string name="signup_full_name">Full Name</string>
+    <string name="signup_email">Email Address (optional)</string>
+    <string name="signup_phone">Phone Number</string>
+    <string name="signup_profession">Profession</string>
+    <string name="signup_professional_number">Professional / License Number (optional)</string>
+    <string name="signup_facility">Facility / Clinic Name</string>
+    <string name="signup_county">County</string>
+    <string name="signup_create_pin">Create PIN</string>
+    <string name="signup_confirm_pin">Confirm PIN</string>
+    <string name="signup_pin_hint">Your PIN protects patient data on this device</string>
+    <string name="signup_button">Create Account</string>
+    <string name="signup_have_account">Already have an account? Login</string>
+
+    <!-- Auth — Login -->
+    <string name="login_title">Sign In</string>
+    <string name="login_subtitle">Enter your credentials to continue</string>
+    <string name="login_identifier_label">Phone Number or Email</string>
+    <string name="login_identifier_placeholder">07xx xxx xxx or email</string>
+    <string name="login_pin_label">6-Digit PIN</string>
+    <string name="login_button">Login</string>
+    <string name="login_forgot_pin">Forgot PIN?</string>
+    <string name="login_no_account">Create Account</string>
+    <string name="login_error_invalid">Invalid phone/email or PIN. Please try again.</string>
+    <string name="login_error_lockout">Too many failed attempts. Try again in %d seconds.</string>
+
+    <!-- Auth — Forgot PIN -->
+    <string name="forgot_pin_title">Reset PIN</string>
+    <string name="forgot_pin_verify_title">Verify Identity</string>
+    <string name="forgot_pin_set_title">Set New PIN</string>
+    <string name="forgot_pin_phone">Registered Phone Number</string>
+    <string name="forgot_pin_professional_number">Professional / License Number</string>
+    <string name="forgot_pin_facility">Facility Name</string>
+    <string name="forgot_pin_verify_button">Verify Identity</string>
+    <string name="forgot_pin_reset_button">Reset PIN</string>
+
+    <!-- Validation Errors -->
+    <string name="error_full_name_required">Full name is required (min 3 characters)</string>
+    <string name="error_full_name_invalid">Full name may only contain letters and spaces</string>
+    <string name="error_email_invalid">Please enter a valid email address</string>
+    <string name="error_phone_required">Phone number is required</string>
+    <string name="error_phone_invalid">Enter a valid Kenyan phone number (e.g., 0712345678)</string>
+    <string name="error_phone_exists">This phone number is already registered</string>
+    <string name="error_email_exists">This email is already registered</string>
+    <string name="error_profession_required">Please select your profession</string>
+    <string name="error_facility_required">Facility name is required</string>
+    <string name="error_county_required">Please select your county</string>
+    <string name="error_pin_required">PIN is required</string>
+    <string name="error_pin_length">PIN must be exactly 6 digits</string>
+    <string name="error_pin_mismatch">PINs do not match</string>
+    <string name="error_user_not_found">Account not found. Check your phone number or email.</string>
+    <string name="error_pin_incorrect">Incorrect PIN</string>
+
+    <!-- Home Dashboard -->
+    <string name="home_welcome">Welcome, %s</string>
+    <string name="home_quick_actions">QUICK ACTIONS</string>
+    <string name="home_recent_patients">RECENT PATIENTS</string>
+    <string name="home_see_all">See All</string>
+    <string name="home_start_triage">Start Triage</string>
+    <string name="home_triage_subtitle">AI Assessment</string>
+    <string name="home_imci_guidelines">IMCI Guidelines</string>
+    <string name="home_imci_subtitle">Offline Search</string>
+    <string name="home_referral_log">Referral Log</string>
+    <string name="home_referral_subtitle">High-risk cases</string>
+    <string name="home_advisories">Advisories</string>
+    <string name="home_advisories_subtitle">Safety tips</string>
+    <string name="home_sync_status">SYNC STATUS</string>
+    <string name="home_cases_today">CASES TODAY</string>
+    <string name="home_no_patients">No patients yet</string>
+    <string name="home_no_patients_subtitle">Tap Start Triage to assess your first patient</string>
+
+    <!-- Alert Banners -->
+    <string name="alert_climate_title">CLIMATE RISK ALERT</string>
+    <string name="alert_sync_pending">%d records pending synchronization</string>
+    <string name="alert_sync_now">Sync Now</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_appearance">Appearance</string>
+    <string name="settings_theme">Theme</string>
+    <string name="settings_theme_blue_yellow">Blue-Yellow</string>
+    <string name="settings_theme_dark">Dark Mode</string>
+    <string name="settings_theme_light">Light Mode</string>
+    <string name="settings_facility">Facility</string>
+    <string name="settings_sync">Sync</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_follow_up_reminders">Follow-up Reminders</string>
+    <string name="settings_vaccine_alerts">Vaccine Alerts</string>
+    <string name="settings_data">Data</string>
+    <string name="settings_export_backup">Export Backup</string>
+    <string name="settings_clear_cache">Clear Cache</string>
+    <string name="settings_about">About</string>
+    <string name="settings_logout">Logout</string>
+    <string name="settings_logout_confirm">Are you sure you want to logout?</string>
+
+    <!-- General -->
+    <string name="loading">Loading\u2026</string>
+    <string name="please_wait">Please wait\u2026</string>
+    <string name="retry">Retry</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">Confirm</string>
+    <string name="save">Save</string>
+    <string name="edit">Edit</string>
+    <string name="delete">Delete</string>
+    <string name="search">Search</string>
+    <string name="back">Back</string>
+    <string name="close">Close</string>
+    <string name="ok">OK</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="or">or</string>
+    <string name="offline_mode">Offline Mode</string>
+</resources>

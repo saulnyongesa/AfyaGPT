@@ -1,0 +1,1486 @@
+
+================================================================================
+                   AfyaGPT — COMPLETE DEVELOPMENT GUIDE
+               AI-Powered Offline Community Health Worker App
+================================================================================
+  Author      : AfyaGPT Dev Team
+  Version     : 1.0.0
+  Platform    : Android (Kotlin + Jetpack Compose)
+  Database    : SQLite via Room
+  Min SDK     : API 26 (Android 8.0)
+  Target SDK  : API 36
+  Last Updated: 2026-07-23
+================================================================================
+
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+  [0]  TECH STACK & ARCHITECTURE
+  [1]  DESIGN SYSTEM (Themes, Colors, Typography, Components)
+  [2]  DATABASE SCHEMA (Room / SQLite)
+  [3]  PROJECT FOLDER STRUCTURE
+  [4]  PHASE 1 — AUTHENTICATION & HOME DASHBOARD         ← START HERE
+  [5]  PHASE 2 — IMCI TRIAGE ENGINE (AI + Forms)
+  [6]  PHASE 3 — PATIENT RECORDS MODULE
+  [7]  PHASE 4 — IMMUNIZATION TRACKER
+  [8]  PHASE 5 — MEDICAL LIBRARY
+  [9]  PHASE 6 — REFERRAL MANAGEMENT
+  [10] PHASE 7 — MEDICINE & SUPPLY CHAIN
+  [11] PHASE 8 — MATERNAL HEALTH (ANC/PNC)
+  [12] PHASE 9 — NEWBORN & NEONATAL CARE
+  [13] PHASE 10 — HOUSEHOLD & COMMUNITY MANAGEMENT
+  [14] PHASE 11 — REPORTING & ANALYTICS
+  [15] PHASE 12 — CHW TRAINING & LEARNING MODULE
+  [16] PHASE 13 — DJANGO BACKEND SYNC (Future)
+  [17] TESTING STRATEGY
+  [18] GENERAL DEV RULES & CONVENTIONS
+
+================================================================================
+[0]  TECH STACK & ARCHITECTURE
+================================================================================
+
+LANGUAGE:
+  - Kotlin (100%)
+
+UI FRAMEWORK:
+  - Jetpack Compose (Material 3)
+  - Navigation: Jetpack Navigation Compose
+  - State: ViewModel + StateFlow + Compose State
+
+DATABASE:
+  - Room (SQLite wrapper)
+  - No external backend for Phase 1–12 (fully offline)
+
+DEPENDENCY INJECTION:
+  - Hilt (Dagger Hilt for Android)
+
+CONCURRENCY:
+  - Kotlin Coroutines + Flow
+
+ON-DEVICE AI (Phase 5+):
+  - Google MediaPipe LLM Inference API (Gemma-2B)
+  - OR: Rule-based IMCI decision engine as fallback
+
+IMAGE/MEDIA:
+  - Coil (image loading)
+  - ZXing / ML Kit (QR code generation & scanning)
+
+SECURITY:
+  - Android Keystore (encrypted PIN storage)
+  - SQLCipher (optional: encrypted Room DB)
+
+NOTIFICATIONS:
+  - WorkManager (background tasks, follow-up reminders)
+  - AlarmManager (vaccine due date alerts)
+
+FUTURE (Phase 13):
+  - Retrofit + OkHttp (Django REST API sync)
+  - DataStore Preferences (sync metadata)
+
+ARCHITECTURE PATTERN:
+  - MVVM (Model - ViewModel - View)
+  - Repository Pattern (ViewModel → Repository → Room DAO)
+  - Clean Architecture layers:
+      UI Layer      → Composables, ViewModels
+      Domain Layer  → Use Cases, Business Logic
+      Data Layer    → Repositories, DAOs, Room Entities
+
+================================================================================
+[1]  DESIGN SYSTEM
+================================================================================
+
+------------------------------------------------------------------------
+1.1  THEMES
+------------------------------------------------------------------------
+Three themes must be supported, switchable in Settings:
+
+  THEME 1 — Blue-Yellow (DEFAULT / Brand Theme)
+  ─────────────────────────────────────────────
+  Primary           : #1A73E8  (Afya Blue — Google-style deep blue)
+  Primary Variant   : #0D47A1  (Dark Blue — pressed state)
+  Secondary         : #FFC107  (Afya Gold/Yellow)
+  Secondary Variant : #FF8F00  (Amber — pressed state)
+  Background        : #F0F4FF  (Very light blue-white)
+  Surface           : #FFFFFF
+  On-Primary        : #FFFFFF
+  On-Secondary      : #1A1A1A
+  On-Background     : #1A1A2E
+  On-Surface        : #1A1A2E
+  Error             : #D32F2F
+  Success           : #2E7D32
+  Warning           : #F57C00
+
+  THEME 2 — DARK MODE
+  ─────────────────────────────────────────────
+  Primary           : #4DA3FF  (Lighter blue for contrast on dark)
+  Secondary         : #FFD54F  (Softer gold)
+  Background        : #0D1117  (Near-black)
+  Surface           : #161B22  (Dark card)
+  Surface Variant   : #21262D
+  On-Primary        : #FFFFFF
+  On-Background     : #E6EDF3
+  On-Surface        : #C9D1D9
+  Error             : #FF6B6B
+  Success           : #56D364
+  Warning           : #E3B341
+
+  THEME 3 — LIGHT MODE (Neutral / Clean White)
+  ─────────────────────────────────────────────
+  Primary           : #1565C0
+  Secondary         : #FFA000
+  Background        : #FAFAFA
+  Surface           : #FFFFFF
+  On-Primary        : #FFFFFF
+  On-Background     : #212121
+  On-Surface        : #424242
+  Error             : #B00020
+
+THEME IMPLEMENTATION:
+  - Create: ui/theme/Color.kt         → all color tokens
+  - Create: ui/theme/Theme.kt         → MaterialTheme with dynamic theming
+  - Create: ui/theme/Typography.kt    → font definitions
+  - Create: ui/theme/Shapes.kt        → corner radius definitions
+  - Use DataStore to persist theme preference across launches
+  - Wrap entire app in AfyaGPTTheme {} composable
+
+------------------------------------------------------------------------
+1.2  TYPOGRAPHY
+------------------------------------------------------------------------
+  Font Family: "Inter" (Google Fonts)
+  Download via: implementation("androidx.compose.ui:ui-text-google-fonts")
+
+  Scale:
+    DisplayLarge   : Inter Bold, 57sp
+    DisplayMedium  : Inter Bold, 45sp
+    DisplaySmall   : Inter Bold, 36sp
+    HeadlineLarge  : Inter SemiBold, 32sp
+    HeadlineMedium : Inter SemiBold, 28sp
+    HeadlineSmall  : Inter SemiBold, 24sp
+    TitleLarge     : Inter SemiBold, 22sp
+    TitleMedium    : Inter Medium, 16sp
+    TitleSmall     : Inter Medium, 14sp
+    BodyLarge      : Inter Regular, 16sp
+    BodyMedium     : Inter Regular, 14sp
+    BodySmall      : Inter Regular, 12sp
+    LabelLarge     : Inter Medium, 14sp
+    LabelMedium    : Inter Medium, 12sp
+    LabelSmall     : Inter Medium, 11sp
+
+------------------------------------------------------------------------
+1.3  SHAPES & SPACING
+------------------------------------------------------------------------
+  Corner Radius:
+    ExtraSmall : 4.dp
+    Small      : 8.dp
+    Medium     : 12.dp
+    Large      : 16.dp
+    ExtraLarge : 24.dp
+    Full       : 50.dp (for pills/chips)
+
+  Spacing Scale (use consistently):
+    XS  : 4.dp
+    SM  : 8.dp
+    MD  : 16.dp
+    LG  : 24.dp
+    XL  : 32.dp
+    XXL : 48.dp
+
+------------------------------------------------------------------------
+1.4  UI DESIGN PRINCIPLES
+------------------------------------------------------------------------
+  - MINIMALIST: Reduce clutter. One task per screen section.
+  - CARD-BASED: Use elevated Surface cards for grouping related content.
+  - ICON + LABEL: Every action must have both icon and text label.
+  - COLOR SEMANTICS: Red=urgent/danger, Yellow=caution/follow-up, Green=safe/ok
+  - BOTTOM NAVIGATION: 4 tabs — Home, Triage, Library, Records
+  - FLOATING ACTION BUTTON: Primary action on each screen (e.g., + New Patient)
+  - LOADING STATES: Always show skeleton loaders, never blank screens
+  - EMPTY STATES: Friendly illustration + message when no data
+  - ERROR STATES: Clear error messages with retry option
+  - ACCESSIBILITY: Min touch target 48.dp, adequate contrast ratios
+
+------------------------------------------------------------------------
+1.5  REUSABLE COMPONENTS TO BUILD FIRST
+------------------------------------------------------------------------
+  Components (create in ui/components/):
+
+  AfyaButton.kt         — Primary, Secondary, Outlined, Text variants
+  AfyaTextField.kt      — Styled input field with label + error state
+  AfyaPinField.kt       — 6-dot/box PIN entry with show/hide toggle
+  AfyaCard.kt           — Elevated card with optional border
+  AfyaChip.kt           — Status chip (High Risk, Low Risk, Pending)
+  AfyaTopBar.kt         — Custom top bar with back nav and actions
+  AfyaBottomNav.kt      — 4-tab bottom navigation bar
+  AfyaLoadingSpinner.kt — Circular progress with optional message
+  AfyaEmptyState.kt     — Illustration + message for empty screens
+  AfyaAlertBanner.kt    — Climate/urgency alert banners
+  AfyaRiskBadge.kt      — Color-coded risk label (Red/Yellow/Green)
+  AfyaSearchBar.kt      — Search input with filter chips
+  AfyaSectionHeader.kt  — Section title with optional "See All" link
+  AfyaSnackbar.kt       — Success/error/info snackbar
+  ThemeSwitcher.kt      — Toggle component for theme selection
+
+================================================================================
+[2]  DATABASE SCHEMA — Room / SQLite
+================================================================================
+
+------------------------------------------------------------------------
+2.1  ENTITIES (Tables)
+------------------------------------------------------------------------
+
+TABLE: users
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  full_name         TEXT NOT NULL
+  email             TEXT UNIQUE
+  phone_number      TEXT UNIQUE NOT NULL
+  profession        TEXT NOT NULL         -- CHW, Nurse, Clinician, Other
+  professional_number TEXT                -- License/ID number
+  facility_name     TEXT
+  county            TEXT
+  sub_county        TEXT
+  ward              TEXT
+  malaria_risk_zone TEXT DEFAULT 'HIGH'   -- HIGH / LOW
+  pin_hash          TEXT NOT NULL         -- BCrypt or SHA-256 hashed PIN
+  profile_photo_uri TEXT
+  theme_preference  TEXT DEFAULT 'BLUE_YELLOW'  -- BLUE_YELLOW / DARK / LIGHT
+  is_active         INTEGER DEFAULT 1
+  created_at        TEXT NOT NULL
+  last_login_at     TEXT
+
+TABLE: patients
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  patient_uid       TEXT UNIQUE NOT NULL  -- e.g., RE-40921 (auto-generated)
+  full_name         TEXT NOT NULL
+  date_of_birth     TEXT                  -- ISO 8601: YYYY-MM-DD
+  age_years         INTEGER
+  age_months        INTEGER
+  sex               TEXT NOT NULL         -- MALE / FEMALE
+  guardian_name     TEXT
+  guardian_phone    TEXT
+  village           TEXT
+  sub_location      TEXT
+  ward              TEXT
+  county            TEXT
+  household_id      INTEGER               -- FK → households.id
+  registered_by     INTEGER NOT NULL      -- FK → users.id
+  created_at        TEXT NOT NULL
+  updated_at        TEXT
+  is_deleted        INTEGER DEFAULT 0     -- soft delete
+
+TABLE: triage_sessions
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  session_uid       TEXT UNIQUE NOT NULL
+  patient_id        INTEGER NOT NULL      -- FK → patients.id
+  conducted_by      INTEGER NOT NULL      -- FK → users.id
+  session_date      TEXT NOT NULL
+  chief_complaint   TEXT
+  -- General Danger Signs
+  danger_cannot_drink    INTEGER DEFAULT 0   -- 0=No, 1=Yes
+  danger_vomiting_all    INTEGER DEFAULT 0
+  danger_convulsions     INTEGER DEFAULT 0
+  danger_lethargic       INTEGER DEFAULT 0
+  -- Vitals
+  weight_kg         REAL
+  temperature_c     REAL
+  respiratory_rate  INTEGER
+  muac_mm           INTEGER
+  -- Respiratory
+  has_cough         INTEGER DEFAULT 0
+  chest_indrawing   INTEGER DEFAULT 0
+  stridor           INTEGER DEFAULT 0
+  -- Diarrhea
+  has_diarrhea      INTEGER DEFAULT 0
+  diarrhea_days     INTEGER
+  blood_in_stool    INTEGER DEFAULT 0
+  sunken_eyes       INTEGER DEFAULT 0
+  skin_pinch        TEXT                  -- NORMAL / SLOW / VERY_SLOW
+  -- Fever
+  has_fever         INTEGER DEFAULT 0
+  fever_days        INTEGER
+  rdt_result        TEXT                  -- POSITIVE / NEGATIVE / NOT_DONE
+  stiff_neck        INTEGER DEFAULT 0
+  -- Ear
+  ear_pain          INTEGER DEFAULT 0
+  ear_discharge     INTEGER DEFAULT 0
+  ear_discharge_days INTEGER
+  mastoid_tender    INTEGER DEFAULT 0
+  -- Nutrition
+  visible_wasting   INTEGER DEFAULT 0
+  bilateral_oedema  INTEGER DEFAULT 0
+  palm_pallor       TEXT                  -- SEVERE / MILD / NONE
+  -- Classification Results
+  classification_json TEXT               -- JSON: {respiratory, diarrhea, fever, ...}
+  risk_level        TEXT                  -- CRITICAL / HIGH / MEDIUM / LOW
+  -- AI Output
+  ai_summary        TEXT
+  ai_counseling     TEXT
+  -- Treatment
+  treatment_json    TEXT                  -- JSON: [{medicine, dose, frequency, days}]
+  follow_up_date    TEXT
+  notes             TEXT
+  is_synced         INTEGER DEFAULT 0
+
+TABLE: referrals
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  referral_uid      TEXT UNIQUE NOT NULL
+  patient_id        INTEGER NOT NULL      -- FK → patients.id
+  triage_session_id INTEGER               -- FK → triage_sessions.id
+  referred_by       INTEGER NOT NULL      -- FK → users.id
+  referral_date     TEXT NOT NULL
+  urgency           TEXT NOT NULL         -- IMMEDIATE / URGENT / ROUTINE
+  reason            TEXT NOT NULL
+  destination       TEXT NOT NULL         -- Facility name
+  pre_referral_tx   TEXT                  -- Pre-referral treatment given
+  status            TEXT DEFAULT 'PENDING'  -- PENDING / EN_ROUTE / ARRIVED / COMPLETED / NO_SHOW
+  outcome_notes     TEXT
+  qr_code_data      TEXT                  -- JSON string for QR
+  is_synced         INTEGER DEFAULT 0
+
+TABLE: vaccinations
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  patient_id        INTEGER NOT NULL      -- FK → patients.id
+  vaccine_name      TEXT NOT NULL
+  dose_number       INTEGER DEFAULT 1
+  scheduled_date    TEXT
+  administered_date TEXT
+  administered_by   INTEGER               -- FK → users.id
+  batch_number      TEXT
+  status            TEXT DEFAULT 'PENDING'  -- PENDING / GIVEN / MISSED / OVERDUE
+  notes             TEXT
+  is_synced         INTEGER DEFAULT 0
+
+TABLE: households
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  household_uid     TEXT UNIQUE NOT NULL
+  head_of_household TEXT NOT NULL
+  phone_number      TEXT
+  village           TEXT
+  sub_location      TEXT
+  gps_latitude      REAL
+  gps_longitude     REAL
+  water_source      TEXT                  -- PIPED / BOREHOLE / RIVER / RAIN / OTHER
+  toilet_type       TEXT                  -- FLUSH / PIT_LATRINE / OPEN / OTHER
+  handwashing_station INTEGER DEFAULT 0
+  total_members     INTEGER
+  registered_by     INTEGER              -- FK → users.id
+  last_visited      TEXT
+  is_high_risk      INTEGER DEFAULT 0
+  notes             TEXT
+  created_at        TEXT
+  is_synced         INTEGER DEFAULT 0
+
+TABLE: pregnancies
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  patient_id        INTEGER NOT NULL      -- FK → patients.id (mother)
+  lmp_date          TEXT                  -- Last Menstrual Period
+  edd_date          TEXT                  -- Expected Delivery Date
+  gravida           INTEGER               -- Number of pregnancies
+  para              INTEGER               -- Number of deliveries
+  hiv_status        TEXT                  -- POSITIVE / NEGATIVE / UNKNOWN
+  anc_visits_count  INTEGER DEFAULT 0
+  delivery_plan     TEXT
+  delivery_facility TEXT
+  outcome           TEXT                  -- ONGOING / DELIVERED / LOST
+  delivery_date     TEXT
+  registered_by     INTEGER              -- FK → users.id
+  created_at        TEXT
+  is_synced         INTEGER DEFAULT 0
+
+TABLE: anc_visits
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  pregnancy_id      INTEGER NOT NULL      -- FK → pregnancies.id
+  visit_number      INTEGER               -- 1 to 8 (WHO ANC contacts)
+  visit_date        TEXT NOT NULL
+  gestational_age_weeks INTEGER
+  blood_pressure    TEXT                  -- e.g., "120/80"
+  weight_kg         REAL
+  hemoglobin        REAL
+  fetal_heart_rate  INTEGER
+  presentation      TEXT                  -- CEPHALIC / BREECH / TRANSVERSE
+  danger_signs      TEXT                  -- JSON list of danger signs found
+  ifa_given         INTEGER DEFAULT 0     -- Iron Folic Acid given
+  ttv_given         INTEGER DEFAULT 0     -- Tetanus Toxoid Vaccine
+  notes             TEXT
+  conducted_by      INTEGER               -- FK → users.id
+  is_synced         INTEGER DEFAULT 0
+
+TABLE: medicine_stock
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  medicine_name     TEXT NOT NULL
+  category          TEXT                  -- ANTIBIOTIC / ANTIMALARIAL / REHYDRATION / SUPPLEMENT / RDT
+  unit              TEXT                  -- TABLETS / SACHETS / VIALS / STRIPS
+  quantity_in_stock INTEGER DEFAULT 0
+  reorder_level     INTEGER DEFAULT 10
+  expiry_date       TEXT
+  last_restocked    TEXT
+  facility_id       INTEGER               -- FK → users.id (who manages it)
+  notes             TEXT
+
+TABLE: medicine_dispensing
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  stock_id          INTEGER NOT NULL      -- FK → medicine_stock.id
+  patient_id        INTEGER NOT NULL      -- FK → patients.id
+  triage_session_id INTEGER               -- FK → triage_sessions.id
+  quantity          INTEGER NOT NULL
+  dispensed_by      INTEGER              -- FK → users.id
+  dispensed_at      TEXT NOT NULL
+  notes             TEXT
+  is_synced         INTEGER DEFAULT 0
+
+TABLE: protocols (Medical Library)
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  title             TEXT NOT NULL
+  category          TEXT NOT NULL         -- DANGER_SIGNS / RESPIRATORY / DIARRHEA / FEVER / NUTRITION / MATERNAL / NEWBORN / EAR
+  sub_category      TEXT
+  content           TEXT NOT NULL         -- Full markdown/HTML protocol content
+  urgency_level     TEXT                  -- URGENT / MODERATE / ROUTINE
+  tags              TEXT                  -- JSON array of searchable tags
+  version           TEXT DEFAULT '1.0'
+  is_bookmarked     INTEGER DEFAULT 0
+  last_viewed       TEXT
+  updated_at        TEXT
+
+TABLE: chat_messages
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  session_id        INTEGER NOT NULL      -- FK → triage_sessions.id
+  sender            TEXT NOT NULL         -- AI / CHW
+  message           TEXT NOT NULL
+  message_type      TEXT DEFAULT 'TEXT'   -- TEXT / FORM / ALERT / RESULT
+  timestamp         TEXT NOT NULL
+
+TABLE: notifications
+─────────────────────────────────────────────────────────────────────
+  id                INTEGER PRIMARY KEY AUTOINCREMENT
+  type              TEXT NOT NULL         -- FOLLOW_UP / VACCINE_DUE / STOCK_LOW / REFERRAL_UPDATE
+  title             TEXT NOT NULL
+  body              TEXT NOT NULL
+  patient_id        INTEGER               -- FK → patients.id (nullable)
+  due_date          TEXT
+  is_read           INTEGER DEFAULT 0
+  created_at        TEXT NOT NULL
+
+------------------------------------------------------------------------
+2.2  DATABASE CONFIGURATION
+------------------------------------------------------------------------
+  - Database Name  : afyagpt_db
+  - Version        : 1 (increment on schema change with migrations)
+  - Location       : App internal storage (not accessible by other apps)
+  - Encryption     : Use Android Keystore to store encryption key
+  - Backup         : exportToFile() for manual encrypted backup
+  - DAOs           : One DAO per entity table
+  - TypeConverters : For JSON fields (List<>, custom objects)
+
+================================================================================
+[3]  PROJECT FOLDER STRUCTURE
+================================================================================
+
+com.example.afyagpt/
+│
+├── AfyaGPTApp.kt                    ← Application class, Hilt init
+├── MainActivity.kt                  ← Single activity, hosts NavHost
+│
+├── data/
+│   ├── local/
+│   │   ├── AfyaGPTDatabase.kt       ← Room database builder
+│   │   ├── entity/
+│   │   │   ├── UserEntity.kt
+│   │   │   ├── PatientEntity.kt
+│   │   │   ├── TriageSessionEntity.kt
+│   │   │   ├── ReferralEntity.kt
+│   │   │   ├── VaccinationEntity.kt
+│   │   │   ├── HouseholdEntity.kt
+│   │   │   ├── PregnancyEntity.kt
+│   │   │   ├── AncVisitEntity.kt
+│   │   │   ├── MedicineStockEntity.kt
+│   │   │   ├── MedicineDispensingEntity.kt
+│   │   │   ├── ProtocolEntity.kt
+│   │   │   ├── ChatMessageEntity.kt
+│   │   │   └── NotificationEntity.kt
+│   │   └── dao/
+│   │       ├── UserDao.kt
+│   │       ├── PatientDao.kt
+│   │       ├── TriageDao.kt
+│   │       ├── ReferralDao.kt
+│   │       ├── VaccinationDao.kt
+│   │       ├── HouseholdDao.kt
+│   │       ├── PregnancyDao.kt
+│   │       ├── MedicineDao.kt
+│   │       ├── ProtocolDao.kt
+│   │       └── NotificationDao.kt
+│   ├── repository/
+│   │   ├── AuthRepository.kt
+│   │   ├── PatientRepository.kt
+│   │   ├── TriageRepository.kt
+│   │   ├── ReferralRepository.kt
+│   │   ├── VaccinationRepository.kt
+│   │   ├── HouseholdRepository.kt
+│   │   ├── PregnancyRepository.kt
+│   │   ├── MedicineRepository.kt
+│   │   ├── ProtocolRepository.kt
+│   │   └── NotificationRepository.kt
+│   └── preferences/
+│       └── UserPreferences.kt       ← DataStore for theme, session state
+│
+├── domain/
+│   ├── model/                       ← Domain models (clean, no Room annotations)
+│   │   ├── User.kt
+│   │   ├── Patient.kt
+│   │   ├── TriageSession.kt
+│   │   └── ... (mirror of entities)
+│   └── usecase/
+│       ├── auth/
+│       │   ├── RegisterUserUseCase.kt
+│       │   ├── LoginUserUseCase.kt
+│       │   └── LogoutUserUseCase.kt
+│       ├── triage/
+│       │   ├── CreateTriageSessionUseCase.kt
+│       │   ├── ClassifyIMCIUseCase.kt        ← Core IMCI logic
+│       │   └── GetTriageHistoryUseCase.kt
+│       ├── patient/
+│       │   ├── RegisterPatientUseCase.kt
+│       │   └── SearchPatientsUseCase.kt
+│       └── ... (one folder per domain area)
+│
+├── ui/
+│   ├── theme/
+│   │   ├── Color.kt
+│   │   ├── Theme.kt
+│   │   ├── Typography.kt
+│   │   └── Shapes.kt
+│   ├── components/                  ← Reusable UI components
+│   │   ├── AfyaButton.kt
+│   │   ├── AfyaTextField.kt
+│   │   ├── AfyaPinField.kt
+│   │   ├── AfyaCard.kt
+│   │   ├── AfyaChip.kt
+│   │   ├── AfyaTopBar.kt
+│   │   ├── AfyaBottomNav.kt
+│   │   ├── AfyaLoadingSpinner.kt
+│   │   ├── AfyaEmptyState.kt
+│   │   ├── AfyaAlertBanner.kt
+│   │   ├── AfyaRiskBadge.kt
+│   │   ├── AfyaSearchBar.kt
+│   │   └── AfyaSnackbar.kt
+│   ├── navigation/
+│   │   ├── NavGraph.kt              ← Root navigation graph
+│   │   ├── AppRoute.kt              ← Sealed class with all routes
+│   │   └── BottomNavItem.kt
+│   │
+│   ├── screens/
+│   │   ├── splash/
+│   │   │   └── SplashScreen.kt
+│   │   ├── auth/
+│   │   │   ├── SignUpScreen.kt
+│   │   │   ├── LoginScreen.kt
+│   │   │   ├── ForgotPinScreen.kt
+│   │   │   └── AuthViewModel.kt
+│   │   ├── home/
+│   │   │   ├── HomeScreen.kt
+│   │   │   └── HomeViewModel.kt
+│   │   ├── triage/
+│   │   │   ├── TriageScreen.kt
+│   │   │   ├── TriageChatScreen.kt
+│   │   │   ├── RespRateTimerScreen.kt
+│   │   │   ├── TriageResultScreen.kt
+│   │   │   └── TriageViewModel.kt
+│   │   ├── patients/
+│   │   │   ├── PatientListScreen.kt
+│   │   │   ├── PatientDetailScreen.kt
+│   │   │   ├── RegisterPatientScreen.kt
+│   │   │   └── PatientViewModel.kt
+│   │   ├── library/
+│   │   │   ├── LibraryScreen.kt
+│   │   │   ├── ProtocolDetailScreen.kt
+│   │   │   └── LibraryViewModel.kt
+│   │   ├── referral/
+│   │   │   ├── ReferralScreen.kt
+│   │   │   ├── ReferralDetailScreen.kt
+│   │   │   └── ReferralViewModel.kt
+│   │   ├── immunization/
+│   │   │   ├── ImmunizationScreen.kt
+│   │   │   └── ImmunizationViewModel.kt
+│   │   ├── maternal/
+│   │   │   ├── MaternalScreen.kt
+│   │   │   ├── AncVisitScreen.kt
+│   │   │   └── MaternalViewModel.kt
+│   │   ├── household/
+│   │   │   ├── HouseholdScreen.kt
+│   │   │   └── HouseholdViewModel.kt
+│   │   ├── medicine/
+│   │   │   ├── StockScreen.kt
+│   │   │   ├── DosageCalculatorScreen.kt
+│   │   │   └── MedicineViewModel.kt
+│   │   ├── reports/
+│   │   │   ├── ReportsScreen.kt
+│   │   │   └── ReportsViewModel.kt
+│   │   └── settings/
+│   │       ├── SettingsScreen.kt
+│   │       └── SettingsViewModel.kt
+│
+├── util/
+│   ├── PinHasher.kt                 ← Secure PIN hashing utility
+│   ├── PatientIdGenerator.kt        ← Generate unique patient UIDs
+│   ├── DateTimeUtils.kt             ← Date formatting, age calculation
+│   ├── IMCIClassifier.kt            ← Core IMCI rule-based logic engine
+│   ├── DosageCalculator.kt          ← Weight/age-based drug dosage
+│   ├── QRCodeGenerator.kt           ← ZXing QR bitmap generator
+│   ├── ValidationUtils.kt           ← Input validation functions
+│   └── SyncQueueManager.kt          ← Tracks unsynced records
+│
+└── di/
+    ├── AppModule.kt                 ← Hilt module for app-level deps
+    ├── DatabaseModule.kt            ← Room DB + DAO providers
+    └── RepositoryModule.kt          ← Repository bindings
+
+================================================================================
+[4]  PHASE 1 — AUTHENTICATION & HOME DASHBOARD
+================================================================================
+  STATUS: ⏳ IN PROGRESS (Start Here)
+  PRIORITY: 🔴 CORE
+
+------------------------------------------------------------------------
+4.1  DEPENDENCIES TO ADD (app/build.gradle.kts)
+------------------------------------------------------------------------
+  // Room
+  implementation("androidx.room:room-runtime:2.6.1")
+  implementation("androidx.room:room-ktx:2.6.1")
+  ksp("androidx.room:room-compiler:2.6.1")
+
+  // Hilt
+  implementation("com.google.dagger:hilt-android:2.51.1")
+  ksp("com.google.dagger:hilt-android-compiler:2.51.1")
+  implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+  // Navigation Compose
+  implementation("androidx.navigation:navigation-compose:2.7.7")
+
+  // DataStore
+  implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+  // Coroutines
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
+
+  // Lifecycle
+  implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.0")
+
+  // Security / Crypto
+  implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+  // Google Fonts
+  implementation("androidx.compose.ui:ui-text-google-fonts:1.6.7")
+
+  // Splash Screen API
+  implementation("androidx.core:core-splashscreen:1.0.1")
+
+  // Icons Extended
+  implementation("androidx.compose.material:material-icons-extended:1.6.7")
+
+------------------------------------------------------------------------
+4.2  SPLASH SCREEN
+------------------------------------------------------------------------
+  File: SplashScreen.kt
+  Duration: 2 seconds
+  Content:
+    - AfyaGPT logo (centered)
+    - App name "AfyaGPT" in brand typography
+    - Tagline: "Health Intelligence for Every Community"
+    - Animated: Logo fades in + scales up
+    - Background: Primary blue gradient
+  
+  Logic:
+    - Check if user is already logged in (DataStore has active session)
+    - If YES → navigate to HomeScreen
+    - If NO  → navigate to LoginScreen
+
+------------------------------------------------------------------------
+4.3  SIGN UP SCREEN
+------------------------------------------------------------------------
+  File: SignUpScreen.kt + AuthViewModel.kt
+  Route: "auth/signup"
+
+  FIELDS (in order):
+    1. Full Name          [Text Field]  — Required
+    2. Email Address      [Text Field, keyboard=Email]  — Optional but validated if entered
+    3. Phone Number       [Text Field, keyboard=Phone, prefix=+254]  — Required, Unique
+    4. Profession         [Dropdown]    — Required
+                           Options: Community Health Worker, Nurse, Clinical Officer,
+                                    Medical Officer, Midwife, Nutritionist, Other
+    5. Professional Number [Text Field] — Optional (license/ID, required if Nurse+)
+    6. Facility Name      [Text Field]  — Required
+    7. County             [Dropdown]    — Required (all 47 Kenya counties)
+    8. Create PIN         [PinField, 6 dots] — Required
+    9. Confirm PIN        [PinField, 6 dots] — Required, must match
+
+  VALIDATION RULES:
+    - Full name: min 3 characters, letters and spaces only
+    - Email: valid format if provided
+    - Phone: valid Kenyan number (07xx or 01xx, 10 digits), stored as +254xxxxxxxxx
+    - Profession: must be selected
+    - Facility: min 3 characters
+    - County: must be selected
+    - PIN: exactly 6 digits
+    - Confirm PIN: must match PIN
+
+  PIN STORAGE:
+    - NEVER store raw PIN
+    - Hash with SHA-256 + random salt stored alongside hash
+    - Store in Room → users.pin_hash
+
+  UI DESIGN:
+    - Scrollable Column
+    - Progress indicator at top (Step 1 of 2: Personal Info / Step 2: Security)
+    - Each section in a Card with subtle elevation
+    - "Create Account" button: Filled, full-width, Primary blue
+    - "Already have account? Login" TextButton at bottom
+    - AfyaGPT logo at top
+
+  NAVIGATION:
+    - Success → Auto-login → HomeScreen
+    - "Login" link → LoginScreen
+
+------------------------------------------------------------------------
+4.4  LOGIN SCREEN
+------------------------------------------------------------------------
+  File: LoginScreen.kt
+  Route: "auth/login"
+
+  FIELDS:
+    1. Phone/Email        [Text Field] — can enter either
+    2. PIN                [PinField, 6 dots with show/hide icon]
+
+  LOGIC:
+    - Query Room DB: find user by phone or email
+    - Hash entered PIN and compare with stored hash
+    - On match: save session to DataStore → navigate to HomeScreen
+    - On failure: show error, allow 5 attempts before 30s lockout
+
+  UI DESIGN:
+    - Clean centered layout
+    - AfyaGPT logo large at top (scrollable)
+    - Blue gradient header area
+    - White card below containing fields
+    - "Login" button: Primary filled
+    - "Forgot PIN?" TextButton → ForgotPinScreen
+    - "Create Account" → SignUpScreen
+    - Offline mode indicator if no internet
+
+------------------------------------------------------------------------
+4.5  FORGOT PIN SCREEN
+------------------------------------------------------------------------
+  File: ForgotPinScreen.kt
+  Route: "auth/forgot-pin"
+
+  FLOW:
+    - Enter registered phone number or email
+    - Verify identity: re-enter professional number OR facility name
+    - Set new 6-digit PIN
+    - Confirm new PIN
+    - Success → LoginScreen
+
+  NOTE: Fully offline — no OTP needed in Phase 1 (security questions instead)
+
+------------------------------------------------------------------------
+4.6  HOME DASHBOARD SCREEN
+------------------------------------------------------------------------
+  File: HomeScreen.kt + HomeViewModel.kt
+  Route: "home"
+
+  SECTIONS (top to bottom):
+
+  1. TOP BAR
+     - Left: Hamburger menu icon (drawer) + AfyaGPT logo small
+     - Center: "AfyaGPT" title
+     - Right: Profile avatar (circular, initials if no photo)
+
+  2. WELCOME HEADER CARD
+     - "Welcome, [First Name]" — TitleLarge
+     - [Location pin icon] "[Facility Name]"
+     - [Shield icon] Right side — animated pulse
+
+  3. CLIMATE RISK ALERT BANNER (conditional)
+     - Shown when risk data exists in local DB
+     - Orange/Red banner with warning icon
+     - "[Alert Type]: [Description]"
+     - "[Disease Risk]: [Level]" chip below
+     - Dismissible (saves dismissed state to DataStore)
+
+  4. SYNC ALERT BANNER (conditional)
+     - Shown when unsynced records exist
+     - "[n] records pending synchronization"
+     - Sync icon (right)
+
+  5. QUICK ACTIONS GRID (2x2)
+     - Start Triage      [AI Assessment icon]   → TriageScreen
+     - IMCI Guidelines   [Book icon]             → LibraryScreen (filtered)
+     - Referral Log      [Arrow icon]            → ReferralScreen
+     - Advisories        [Info icon]             → AdvisoryScreen
+
+  6. RECENT PATIENTS (horizontal scroll or list, max 5)
+     - "RECENT PATIENTS" section header + "See All" link
+     - Each item: Avatar circle, Name, Age+Condition, Risk Badge
+     - Tap → PatientDetailScreen
+
+  7. STATS ROW
+     - Sync Status: "XX% | Last sync: Xm ago"
+     - Cases Today: "X | +X vs yesterday"
+
+  BOTTOM NAVIGATION BAR:
+     Tab 1: Home     (filled home icon when active)
+     Tab 2: Triage   (stethoscope icon)
+     Tab 3: Library  (book icon)
+     Tab 4: Records  (clipboard icon)
+
+  DATA TO LOAD (HomeViewModel):
+    - Current user from DataStore → users table
+    - Unsynced record count from all tables
+    - Recent patients (last 5 by updated_at)
+    - Cases today (count of triage_sessions where date = today)
+    - Pending referrals count
+    - Climate/advisory alerts from local cache
+
+------------------------------------------------------------------------
+4.7  PROFILE / DRAWER SCREEN
+------------------------------------------------------------------------
+  File: ProfileDrawer.kt (Navigation Drawer)
+  Content:
+    - Avatar + Name + Facility
+    - Menu: Home, My Profile, Settings, About AfyaGPT, Logout
+    - Theme switcher (3 radio options: Blue-Yellow / Dark / Light)
+    - Version number at bottom
+
+------------------------------------------------------------------------
+4.8  SETTINGS SCREEN
+------------------------------------------------------------------------
+  File: SettingsScreen.kt
+  Route: "settings"
+  Sections:
+    - Appearance: Theme Selection (Blue-Yellow / Dark / Light), Font Size (Normal / Large)
+    - Account: Edit Profile, Change PIN
+    - Facility: Update facility name, county, malaria risk zone
+    - Sync: Last sync time, Manual sync button, Sync log
+    - Notifications: Follow-up reminders ON/OFF, Vaccine alerts ON/OFF
+    - Data: Export backup, Clear cache
+    - About: App version, WHO IMCI version, Terms & Privacy
+
+------------------------------------------------------------------------
+4.9  PHASE 1 CHECKLIST
+------------------------------------------------------------------------
+  [ ] Create Room database with UserEntity
+  [ ] Implement UserDao (insert, findByPhone, findByEmail)
+  [ ] Implement AuthRepository
+  [ ] Implement RegisterUserUseCase (validate + hash PIN + insert)
+  [ ] Implement LoginUserUseCase (lookup + hash compare + session)
+  [ ] Create DataStore UserPreferences (userId, isLoggedIn, theme)
+  [ ] Build SplashScreen with navigation logic
+  [ ] Build SignUpScreen (all fields + validation)
+  [ ] Build LoginScreen (phone/email + PIN)
+  [ ] Build ForgotPinScreen (offline identity verification)
+  [ ] Build HomeScreen (all sections as described)
+  [ ] Build ProfileDrawer (navigation + theme switcher)
+  [ ] Build SettingsScreen (basic settings)
+  [ ] Implement AfyaGPTTheme with all 3 theme variants
+  [ ] Build all reusable components (AfyaButton, AfyaTextField, etc.)
+  [ ] Implement AfyaPinField (6-dot animated input)
+  [ ] Build AfyaBottomNav with 4 tabs
+  [ ] Set up NavGraph with all Phase 1 routes
+  [ ] Add Hilt DI wiring (AppModule, DatabaseModule, RepositoryModule)
+  [ ] Unit test: AuthRepository, PinHasher
+  [ ] UI test: Login flow, Signup flow
+
+================================================================================
+[5]  PHASE 2 — IMCI TRIAGE ENGINE
+================================================================================
+  STATUS: ⏳ PENDING (After Phase 1)
+  PRIORITY: 🔴 CORE
+
+------------------------------------------------------------------------
+5.1  OVERVIEW
+------------------------------------------------------------------------
+  The IMCI Triage Engine is the clinical brain of AfyaGPT. It guides
+  CHWs through the WHO 4-step IMCI assessment protocol via:
+    MODE A: AI Chat (Gemma-2B on-device) → conversational triage
+    MODE B: Structured Forms (checkbox-based, no AI dependency)
+  
+  Both modes produce the same output: classification + treatment plan.
+
+------------------------------------------------------------------------
+5.2  TRIAGE START FLOW
+------------------------------------------------------------------------
+  Entry: Tap "Start Triage" from Home or Triage tab
+  
+  STEP 0 — Patient Selection
+    - Search existing patient by name or ID
+    - OR: "Register New Patient" → PatientRegistrationScreen (mini)
+    - Display: Patient card (name, age, sex)
+    - "Begin Assessment" button
+
+  STEP 1 — General Danger Signs (ALWAYS FIRST)
+    Screen: DangerSignsScreen
+    Display: 4 large checkbox cards with icon + description:
+      ✗ Unable to drink or breastfeed
+      ✗ Vomiting everything
+      ✗ Convulsions (current or history)
+      ✗ Lethargic or unconscious
+    
+    If ANY checked → Red banner "DANGER SIGN DETECTED"
+      → Show: Immediate Referral Instructions card
+      → Button: "Create Emergency Referral"
+      → Still allow proceeding to full assessment
+
+  STEP 2 — Vital Signs Entry
+    Screen: VitalsScreen
+    Fields:
+      - Weight (kg) — numeric input with visual weight scale
+      - Temperature (°C) — with hot/cold indicator
+      - Respiratory Rate — [built-in timer button] (see 5.3)
+      - MUAC (mm) — with color band indicator: <115 RED, 115-125 YELLOW, >125 GREEN
+    
+  STEP 3A — Cough / Breathing Assessment
+    Screen: CoughAssessmentScreen
+    Fields:
+      - Has cough or difficulty breathing? (Yes/No toggle)
+      - [If Yes] Respiratory Rate result (from timer)
+      - Chest indrawing? (Yes/No)
+      - Stridor when calm? (Yes/No)
+    Result → IMCIClassifier.classifyRespiratory()
+      → SEVERE PNEUMONIA (Pink) / PNEUMONIA (Yellow) / NO PNEUMONIA (Green)
+    Show: Classification chip + Treatment card (amoxicillin dosage)
+
+  STEP 3B — Diarrhea Assessment
+    Screen: DiarrheaAssessmentScreen
+    Fields:
+      - Has diarrhea? (Yes/No)
+      - [If Yes] Days with diarrhea (number input)
+      - Blood in stool? (Yes/No)
+      - Sunken eyes? (Yes/No)
+      - Skin turgor (Skin pinch test): Normal / Goes back slowly / Very slowly
+      - Drinking ability: Drinks eagerly / Drinks poorly / Cannot drink
+    Result → IMCIClassifier.classifyDiarrhea()
+      → SEVERE DEHYDRATION (Pink) / SOME DEHYDRATION (Yellow) / NO DEHYDRATION (Green)
+      → PERSISTENT DIARRHEA (if ≥ 14 days)
+      → DYSENTERY (if blood in stool)
+    Show: ORS/Zinc dosage calculator based on weight
+
+  STEP 3C — Fever Assessment
+    Screen: FeverAssessmentScreen
+    Fields:
+      - Fever currently or in last 7 days? (Yes/No)
+      - Temperature °C (pre-filled from vitals)
+      - Stiff neck? (Yes/No)
+      - Malaria RDT result: Positive / Negative / Not Done
+      - Measles rash? (Yes/No)
+      - Days with fever: number input
+    Result → IMCIClassifier.classifyFever()
+      → MALARIA (Yellow) / SEVERE FEBRILE DISEASE (Pink) / FEVER NO MALARIA (Yellow/Green)
+    Show: ACT dosage calculator if malaria positive
+
+  STEP 3D — Ear Problem Assessment
+    Screen: EarAssessmentScreen
+    Fields:
+      - Ear pain? (Yes/No)
+      - Ear discharge? (Yes/No)
+      - [If Yes] Discharge duration (days)
+      - Mastoid tenderness? (Yes/No)
+    Result → IMCIClassifier.classifyEar()
+      → MASTOIDITIS (Pink) / ACUTE EAR INFECTION (Yellow) / CHRONIC EAR INFECTION (Yellow) / NO EAR PROBLEM (Green)
+
+  STEP 4 — Nutrition Assessment
+    Screen: NutritionAssessmentScreen
+    Fields:
+      - Visible severe wasting? (Yes/No)
+      - Oedema of both feet? (Yes/No)
+      - MUAC result (pre-filled from vitals)
+      - Palm pallor: Severe / Mild / None
+    Result → IMCIClassifier.classifyNutrition()
+      → SAM (Pink) / MAM (Yellow) / NOT MALNOURISHED (Green)
+      → SEVERE ANEMIA (Pink) / SOME ANEMIA (Yellow) / NO ANEMIA (Green)
+
+  STEP 5 — Immunization Review
+    Screen: ImmunizationReviewScreen
+    - Load child's vaccination record
+    - Show overdue vaccines in red
+    - Allow marking given vaccines
+    - Vitamin A: show if due
+
+  STEP 6 — Triage Result Summary
+    Screen: TriageResultScreen
+    - Overall Risk Level banner (Critical/High/Medium/Low)
+    - Classification cards per domain (Respiratory, Diarrhea, Fever, Nutrition)
+    - Treatment Plan section:
+        - Each medicine: name, dose, frequency, days, instructions
+        - Dosage is auto-calculated from weight
+    - Counseling Messages section (caregiver advice)
+    - Actions:
+        - "Create Referral" (if Pink classifications)
+        - "Record Treatment" → saves treatment to DB
+        - "Schedule Follow-up" → date picker
+        - "Print/Share QR Summary"
+
+------------------------------------------------------------------------
+5.3  RESPIRATORY RATE TIMER SCREEN
+------------------------------------------------------------------------
+  File: RespRateTimerScreen.kt
+  - Large circular timer (60 seconds countdown)
+  - Giant "TAP to count" button in center
+  - Breath count increments with each tap
+  - Animation: pulse ring expands on each tap
+  - Result auto-calculated: count × 1 (if 60s) or count × 2 (if 30s mode)
+  - Age threshold alert shown: "Threshold for [age]: [n] breaths/min"
+  - "Fast breathing" / "Normal" result displayed
+
+------------------------------------------------------------------------
+5.4  IMCI CLASSIFIER ENGINE
+------------------------------------------------------------------------
+  File: util/IMCIClassifier.kt
+
+  Functions:
+    classifyRespiratory(age, respRate, chestIndrawing, stridor) → Classification
+    classifyDiarrhea(days, bloodInStool, sunkenEyes, skinPinch, canDrink) → Classification
+    classifyFever(tempC, rdtResult, stiffNeck, measlesRash, daysWithFever, malariaRiskZone) → Classification
+    classifyEar(earPain, earDischarge, dischargeDays, mastoidTender) → Classification
+    classifyNutrition(muacMm, visibleWasting, bilateralOedema, palmPallor) → Classification
+    generateTreatmentPlan(classifications, weightKg, ageMonths) → List<Treatment>
+    generateCounselingMessages(classifications) → List<String>
+
+  Respiratory Rate Thresholds:
+    Age < 2 months   : fast if ≥ 60 bpm
+    Age 2–11 months  : fast if ≥ 50 bpm
+    Age 1–5 years    : fast if ≥ 40 bpm
+
+------------------------------------------------------------------------
+5.5  DOSAGE CALCULATOR ENGINE
+------------------------------------------------------------------------
+  File: util/DosageCalculator.kt
+
+  Amoxicillin (Pneumonia):
+    Weight 4–6 kg    : 125mg twice daily × 5 days
+    Weight 6–10 kg   : 250mg twice daily × 5 days
+    Weight 10–19 kg  : 500mg twice daily × 5 days
+
+  Artemether-Lumefantrine (Malaria — 20mg/120mg tabs):
+    Weight 5–14 kg   : 1 tablet per dose (6 doses over 3 days)
+    Weight 15–24 kg  : 2 tablets per dose
+    Weight 25–34 kg  : 3 tablets per dose
+    Weight ≥ 35 kg   : 4 tablets per dose
+    Schedule: 0h, 8h, 24h, 36h, 48h, 60h
+
+  ORS (Dehydration):
+    Plan A: 50–100ml after each stool (home)
+    Plan B: 75ml/kg over 4 hours (supervised)
+    Plan C: IV fluids — refer immediately
+
+  Zinc:
+    Age < 6 months   : 10mg/day × 14 days
+    Age ≥ 6 months   : 20mg/day × 14 days
+
+  Paracetamol (Fever):
+    10–15 mg/kg per dose, max 4 doses/day
+
+------------------------------------------------------------------------
+5.6  AI CHAT MODE (Gemma-2B Integration)
+------------------------------------------------------------------------
+  Library: Google MediaPipe LLM Inference API
+  Model: Gemma-2B (4-bit quantized, ~1.3GB)
+  Download: First launch or from Settings → Download AI Model
+
+  Chat Architecture:
+    - System prompt embeds IMCI protocol as context
+    - AI receives structured patient info as context
+    - AI guides CHW through conversation
+    - CHW responses parsed → structured data → IMCIClassifier
+    - AI response always validated against IMCI rules
+
+  Fallback: If AI model not downloaded → auto-switch to Form Mode
+
+------------------------------------------------------------------------
+5.7  PHASE 2 CHECKLIST
+------------------------------------------------------------------------
+  [ ] Create PatientEntity + PatientDao
+  [ ] Create TriageSessionEntity + TriageDao
+  [ ] Build IMCIClassifier engine with all classification functions
+  [ ] Build DosageCalculator with all medicine tables
+  [ ] Build TriageStartScreen (patient selection)
+  [ ] Build DangerSignsScreen
+  [ ] Build VitalsScreen
+  [ ] Build CoughAssessmentScreen
+  [ ] Build RespRateTimerScreen (animated, 60-second)
+  [ ] Build DiarrheaAssessmentScreen
+  [ ] Build FeverAssessmentScreen
+  [ ] Build EarAssessmentScreen
+  [ ] Build NutritionAssessmentScreen
+  [ ] Build ImmunizationReviewScreen
+  [ ] Build TriageResultScreen (full summary + actions)
+  [ ] Build AI Chat mode (TriageChatScreen)
+  [ ] Integrate Gemma-2B via MediaPipe
+  [ ] Unit test: IMCIClassifier (all classification paths)
+  [ ] Unit test: DosageCalculator (all weight bands)
+
+================================================================================
+[6]  PHASE 3 — PATIENT RECORDS MODULE
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🔴 CORE
+
+  SCREENS TO BUILD:
+    RegisterPatientScreen — all patient fields, auto-generate UID
+    PatientListScreen     — searchable, filterable list with risk badges
+    PatientDetailScreen   — full profile: demographics, visit history,
+                            vitals trend, referrals, vaccinations,
+                            AI triage history, treatment records
+    PatientEditScreen     — edit demographics
+
+  FEATURES:
+    - Patient search by name, UID, phone, village
+    - Filter by: risk level, age group, condition, date registered
+    - Visit timeline (chronological triage history)
+    - Export patient summary as shareable text
+    - QR code on patient card (links to patient UID for referral)
+    - Soft delete (mark as inactive, not permanent)
+    - Duplicate detection on registration (same name + DOB + phone)
+
+  CHECKLIST:
+  [ ] PatientEntity, PatientDao
+  [ ] PatientRepository + use cases
+  [ ] RegisterPatientScreen
+  [ ] PatientListScreen with search + filter
+  [ ] PatientDetailScreen with all sections
+  [ ] PatientViewModel with full CRUD operations
+  [ ] Patient UID generator (format: RE-XXXXX)
+
+================================================================================
+[7]  PHASE 4 — IMMUNIZATION TRACKER
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🔴 CORE
+
+  SCREENS:
+    ImmunizationListScreen  — List of all children due/overdue
+    VaccinationDetailScreen — Per-child full EPI schedule grid
+    RecordVaccineScreen     — Record given vaccine
+    DefaulterListScreen     — Children who missed vaccines
+
+  BUILT-IN KENYA EPI SCHEDULE:
+    Birth   : BCG, OPV-0
+    6 weeks : OPV-1, Penta-1, PCV-1, Rota-1
+    10 weeks: OPV-2, Penta-2, PCV-2, Rota-2
+    14 weeks: OPV-3, Penta-3, PCV-3
+    6 months: Vitamin A Dose 1
+    9 months: MR-1, Yellow Fever
+    12 months: MR-2
+    18 months: MR-3 (Booster)
+
+  AUTO-LOGIC:
+    - Calculate due dates from patient DOB
+    - Generate WorkManager notifications for due vaccines (3 days before)
+    - Flag overdue vaccines (> 4 weeks past scheduled date)
+    - Defaulter list: any child with 1+ missed vaccines
+
+================================================================================
+[8]  PHASE 5 — MEDICAL LIBRARY
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🔴 CORE
+
+  SCREENS:
+    LibraryScreen       — Searchable protocol browser with filter chips
+    ProtocolDetailScreen — Full protocol: description, classification, treatment
+
+  INITIAL PROTOCOLS TO EMBED (pre-load in Room on first install):
+    1.  General Danger Signs
+    2.  Severe Pneumonia
+    3.  Pneumonia (Non-Severe)
+    4.  Dehydration Plan A (No Dehydration)
+    5.  Dehydration Plan B (Some Dehydration)
+    6.  Dehydration Plan C (Severe Dehydration)
+    7.  Dysentery
+    8.  Persistent Diarrhea
+    9.  Fever — Malaria (High Risk)
+    10. Fever — Malaria (Low Risk)
+    11. Severe Malaria
+    12. Measles
+    13. Fever — Other Causes
+    14. Acute Ear Infection
+    15. Mastoiditis
+    16. Chronic Ear Infection
+    17. SAM (Severe Acute Malnutrition)
+    18. MAM (Moderate Acute Malnutrition)
+    19. Severe Anemia
+    20. Newborn Danger Signs (Young Infant)
+    21. Possible Serious Bacterial Infection (Neonate)
+    22. Diarrhea in Young Infant
+    23. Jaundice
+    24. ANC Protocol
+    25. PNC Protocol
+    26. Pre-Eclampsia Management
+    27. Drug Reference: Amoxicillin
+    28. Drug Reference: Artemether-Lumefantrine
+    29. Drug Reference: ORS & Zinc
+    30. Drug Reference: Paracetamol
+    31. Growth Monitoring Guide
+    32. MUAC Assessment Guide
+    33. Breastfeeding Support
+
+  FEATURES:
+    - Search by keyword
+    - Filter by category chips
+    - Bookmarks / favorites
+    - Recently viewed list
+    - "LOCAL VERSION" badge on all protocols
+    - Urgency badge on each protocol card
+
+================================================================================
+[9]  PHASE 6 — REFERRAL MANAGEMENT
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🔴 CORE
+
+  SCREENS:
+    ReferralListScreen    — All referrals (filter: pending/completed)
+    CreateReferralScreen  — Create referral from triage or manually
+    ReferralDetailScreen  — Full referral info + QR code
+    ReferralQRScreen      — Full-screen scannable QR
+
+  QR CODE CONTENT (JSON):
+    {
+      "referralId": "REF-XXXXX",
+      "patientName": "...",
+      "patientId": "RE-XXXXX",
+      "age": "...",
+      "sex": "...",
+      "reason": "...",
+      "urgency": "IMMEDIATE",
+      "classification": "SEVERE PNEUMONIA",
+      "preTreatment": "...",
+      "referredFrom": "...",
+      "referredBy": "...",
+      "date": "..."
+    }
+
+  REFERRAL STATUS WORKFLOW:
+    PENDING → EN_ROUTE → ARRIVED → COMPLETED
+                                 → NO_SHOW
+
+================================================================================
+[10] PHASE 7 — MEDICINE & SUPPLY CHAIN
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🔴 CORE
+
+  SCREENS:
+    StockListScreen       — All medicines with quantity + status
+    StockDetailScreen     — History of use, expiry, reorder alerts
+    AddStockScreen        — Add new medicine or restock
+    DosageCalculatorScreen — Standalone weight/age dosage calculator
+    DispensingScreen      — Record medicine given to a patient
+
+  KEY MEDICINES TO TRACK:
+    - Oral Rehydration Salts (ORS sachets)
+    - Zinc Sulfate (10mg/20mg tablets)
+    - Artemether-Lumefantrine (AL) 20mg/120mg tablets
+    - Amoxicillin (250mg / 500mg capsules)
+    - Paracetamol (125mg / 250mg / 500mg)
+    - Malaria Rapid Diagnostic Tests (RDTs)
+    - Vitamin A capsules (100,000 / 200,000 IU)
+    - Albendazole (400mg tablets)
+    - Iron-Folic Acid tablets
+    - RUTF (Ready-to-Use Therapeutic Food) sachets
+    - Cotrimoxazole (for young infants with PSBI)
+
+================================================================================
+[11] PHASE 8 — MATERNAL HEALTH (ANC/PNC)
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🟡 IMPORTANT
+
+  SCREENS:
+    MaternalListScreen    — All registered pregnancies
+    PregnancyDetailScreen — Full ANC timeline + PNC visits
+    RegisterPregnancyScreen
+    AncVisitScreen        — Record ANC contact (1 of 8 WHO contacts)
+    PncVisitScreen        — Record PNC visit (Day 1, 3, 7, 6 weeks)
+    DangerSignsGuideScreen
+
+  PREGNANCY TRACKING:
+    - LMP → EDD calculation (280 days from LMP)
+    - Gestational age calculator
+    - 8-contact ANC model (WHO 2016)
+    - BP monitoring with pre-eclampsia alert (≥ 140/90)
+    - IFA supplementation tracking
+    - Birth preparedness checklist
+
+================================================================================
+[12] PHASE 9 — NEWBORN & NEONATAL CARE
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🟡 IMPORTANT
+
+  Separate IMCI pathway for children < 2 months
+  
+  KEY ASSESSMENTS:
+    - Newborn Danger Signs
+    - Possible Serious Bacterial Infection (PSBI)
+    - Jaundice assessment
+    - Low birth weight tracking
+    - Kangaroo Mother Care (KMC) guidance
+    - Breastfeeding assessment (latch, positioning)
+    - Cord care assessment
+
+================================================================================
+[13] PHASE 10 — HOUSEHOLD & COMMUNITY MANAGEMENT
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🟡 IMPORTANT
+
+  SCREENS:
+    HouseholdListScreen     — All registered households
+    HouseholdDetailScreen   — Household members + WASH + visit history
+    RegisterHouseholdScreen — GPS + household details
+    HomeVisitScreen         — Log a home visit with findings
+
+  FEATURES:
+    - GPS coordinate capture (requires location permission)
+    - WASH assessment scoring
+    - High-risk household flagging (pregnancy, elderly, SAM, chronic illness)
+    - Catchment area coverage tracking
+
+================================================================================
+[14] PHASE 11 — REPORTING & ANALYTICS
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🟡 IMPORTANT
+
+  SCREENS:
+    ReportsHomeScreen      — Overview of all report types
+    DailySummaryScreen     — Today's cases, referrals, treatments
+    MonthlyReportScreen    — Auto-generated MOH report format
+    ConditionTrendsScreen  — Bar/line charts of conditions over time
+    PerformanceScreen      — CHW KPIs: households visited, cases seen
+
+  CHARTS LIBRARY: Add Vico Charts or MPAndroidChart for Compose
+
+================================================================================
+[15] PHASE 12 — CHW TRAINING & LEARNING
+================================================================================
+  STATUS: ⏳ PENDING
+  PRIORITY: 🟡 IMPORTANT
+
+  SCREENS:
+    LearningHomeScreen     — Available modules + progress
+    QuizScreen             — IMCI refresher quiz with feedback
+    CaseStudyScreen        — Practice triage cases with AI feedback
+    ProgressScreen         — Quiz scores, modules completed
+
+================================================================================
+[16] PHASE 13 — DJANGO BACKEND SYNC (Future)
+================================================================================
+  STATUS: 🔮 FUTURE
+  PRIORITY: 🟢 ADVANCED
+
+  WHEN READY:
+    - Add Retrofit + OkHttp to dependencies
+    - Build SyncManager (WorkManager periodic sync)
+    - Define sync strategy: incremental, conflict resolution (last-write-wins)
+    - Build SyncStatusScreen (sync log, manual trigger)
+    - Django API endpoints to implement:
+        POST /api/sync/patients/
+        POST /api/sync/triage/
+        POST /api/sync/referrals/
+        POST /api/sync/vaccinations/
+        GET  /api/protocols/updates/
+        GET  /api/advisories/
+
+================================================================================
+[17] TESTING STRATEGY
+================================================================================
+
+  UNIT TESTS (JUnit + Mockk):
+    - IMCIClassifier: test all classification branches with boundary values
+    - DosageCalculator: test all weight bands for each medicine
+    - PinHasher: test hash + verify cycle
+    - PatientIdGenerator: test uniqueness
+    - DateTimeUtils: test age calculations, EDD calculation
+    - All Use Cases: mock repositories
+
+  INTEGRATION TESTS (Room In-Memory Database):
+    - UserDao: insert, findByPhone, findByEmail
+    - PatientDao: insert, search, update
+    - TriageDao: insert session, load history
+    - VaccinationDao: calculate overdue vaccines
+
+  UI TESTS (Compose UI Test + Espresso):
+    - Login flow: correct PIN → home, wrong PIN → error
+    - Signup flow: validation errors, success flow
+    - Triage flow: end-to-end with mock patient
+    - Library search: finds correct protocol
+
+  MANUAL QA CHECKLIST:
+    [ ] Test on API 26 device (min SDK)
+    [ ] Test on API 36 device (target SDK)
+    [ ] Test in offline mode (airplane mode)
+    [ ] Test all 3 themes (Blue-Yellow, Dark, Light)
+    [ ] Test with large font size
+    [ ] Test PIN lockout after 5 failed attempts
+    [ ] Test IMCI classifier with known case examples
+
+================================================================================
+[18] GENERAL DEV RULES & CONVENTIONS
+================================================================================
+
+  NAMING:
+    - Screens: [Name]Screen.kt
+    - ViewModels: [Name]ViewModel.kt
+    - Entities: [Name]Entity.kt
+    - DAOs: [Name]Dao.kt
+    - Repositories: [Name]Repository.kt
+    - Use Cases: [Verb][Noun]UseCase.kt
+
+  CODE STYLE:
+    - Follow Kotlin official coding conventions
+    - Max 80 characters per line where possible
+    - All @Composable functions documented with KDoc
+    - No business logic in Composables — always in ViewModel or UseCase
+    - All hardcoded strings → strings.xml (for future multi-language)
+    - All dimensions → use spacing constants (not magic numbers)
+
+  GIT WORKFLOW:
+    - Branch per feature: feature/auth-signup, feature/imci-triage, etc.
+    - Commit messages: "feat:", "fix:", "refactor:", "test:", "docs:"
+    - PR review before merging to main
+
+  SECURITY:
+    - Never log patient data
+    - Never store raw PIN
+    - Use Android Keystore for sensitive key storage
+    - Validate all user inputs before DB operations
+    - Use parameterized queries only (Room prevents SQL injection)
+
+  PERFORMANCE:
+    - LazyColumn for all lists (never Column with forEach)
+    - ViewModel state as StateFlow, not LiveData
+    - Use remember { } and derivedStateOf for derived state
+    - Use Paging 3 for large patient lists (Phase 3+)
+    - Preload medical library into Room at first launch (via DatabaseInitializer)
+
+  ACCESSIBILITY:
+    - All icons must have contentDescription
+    - All interactive elements: min 48dp touch target
+    - Support large font scale (no hardcoded sp with clipToOutline)
+    - Color should not be the only differentiator (add icons/labels)
+
+================================================================================
+END OF DEVELOPMENT GUIDE
+AfyaGPT — Health Intelligence for Every Community
+================================================================================

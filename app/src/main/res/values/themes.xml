@@ -1,0 +1,35 @@
+<resources>
+    <!--
+        themes.xml — AfyaGPT Android Theme Definitions
+
+        These are the XML-layer themes required by the Android system.
+        The actual app visual theming is handled by Jetpack Compose via
+        AfyaGPTTheme in ui/theme/Theme.kt.
+
+        Theme.AfyaGPT.Starting is the splash screen theme applied to
+        MainActivity before Compose takes over, preventing a white flash.
+    -->
+
+    <!-- Base application theme (Material3 parent) -->
+    <style name="Theme.AfyaGPT" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Status bar color — handled by Compose via enableEdgeToEdge() -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <!--
+        Splash screen theme — applied to MainActivity via windowSplashScreenBackground.
+        Uses the brand blue color to avoid a white flash on cold start.
+        The actual animated splash content is handled in SplashScreen.kt.
+    -->
+    <style name="Theme.AfyaGPT.Starting" parent="Theme.SplashScreen">
+        <!-- Brand blue background during the system splash screen phase -->
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <!-- The icon shown in the center of the splash screen -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher_foreground</item>
+        <!-- Post-splash theme to transition into (Compose handles the rest) -->
+        <item name="postSplashScreenTheme">@style/Theme.AfyaGPT</item>
+    </style>
+
+</resources>

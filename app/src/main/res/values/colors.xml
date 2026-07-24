@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    colors.xml — AfyaGPT XML Color Resources
+
+    These colors are used by the Android system layer (themes.xml, manifest).
+    The main app color system is defined in ui/theme/Color.kt for Compose.
+    Only add colors here that the system layer needs (status bar, splash, etc.).
+-->
+<resources>
+    <!-- Splash screen background — matches BlueYellowPrimary in Color.kt -->
+    <color name="splash_background">#1A73E8</color>
+    <!-- Primary brand blue -->
+    <color name="primary">#1A73E8</color>
+    <!-- Secondary gold -->
+    <color name="secondary">#FFC107</color>
+    <!-- Status bar transparent -->
+    <color name="transparent">#00000000</color>
+</resources>
