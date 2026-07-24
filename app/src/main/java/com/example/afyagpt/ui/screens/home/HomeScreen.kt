@@ -527,7 +527,7 @@ private fun AppDrawer(
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
 
-        HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+        Divider(modifier = Modifier.padding(vertical = 16.dp))
 
         NavigationDrawerItem(
             icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = MaterialTheme.colorScheme.error) },
