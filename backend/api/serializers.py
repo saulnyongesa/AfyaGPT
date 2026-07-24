@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserProfile, Patient, TriageSession, Vaccination, ChatMessage
+from .models import UserProfile, Patient, TriageSession, Vaccination, ChatMessage, NewsArticle, ContactInquiry
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -24,4 +24,14 @@ class VaccinationSerializer(serializers.ModelSerializer):
 class ChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = ChatMessage
+        fields = '__all__'
+
+class NewsArticleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NewsArticle
+        fields = '__all__'
+
+class ContactInquirySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ContactInquiry
         fields = '__all__'

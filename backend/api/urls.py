@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     UserProfileViewSet, PatientViewSet,
     TriageSessionViewSet, VaccinationViewSet, ChatMessageViewSet,
+    NewsArticleViewSet, ContactInquiryViewSet,
     AuthRegisterView, AuthLoginView, BatchSyncView
 )
 
@@ -12,6 +13,8 @@ router.register(r'patients', PatientViewSet)
 router.register(r'triage', TriageSessionViewSet)
 router.register(r'vaccinations', VaccinationViewSet)
 router.register(r'chat', ChatMessageViewSet)
+router.register(r'news', NewsArticleViewSet)
+router.register(r'contact-inquiries', ContactInquiryViewSet)
 
 urlpatterns = [
     path('auth/register/', AuthRegisterView.as_view(), name='auth_register'),
