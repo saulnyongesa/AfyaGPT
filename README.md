@@ -1,154 +1,110 @@
-# AfyaGPT 🏥⚡
+# AfyaGPT
 
-**AfyaGPT** is an intelligent, offline-first mobile clinical decision-support application engineered for Community Health Workers (CHWs), Nurses, and Clinical Officers in Kenya and Sub-Saharan Africa. 
+AfyaGPT is an offline-first clinical decision-support application for Community Health Workers, Nurses, and Clinical Officers in Kenya and Sub-Saharan Africa.
 
-Built strictly according to the **World Health Organization (WHO) Integrated Management of Childhood Illness (IMCI)** guidelines and Kenya Ministry of Health (MoH) protocols, AfyaGPT empowers frontline healthcare workers to quickly triage pediatric patients, assess general danger signs, track routine immunizations, and access persistent AI-driven clinical guidance—even in zero-connectivity rural clinics.
+The app follows the World Health Organization Integrated Management of Childhood Illness guidelines and Kenya Ministry of Health protocols. It allows frontline health workers to triage pediatric patients, screen for general danger signs, track routine immunizations, and access clinical guidance, even in clinics with no network connectivity.
 
----
+## Key Features
 
-## 🌟 Key Features
+### IMCI Triage and Assessment
 
-### 1. 🩸 WHO IMCI Triage & Assessment Engine
-- **Step 1: General Danger Signs**: Screen for inability to drink/breastfeed, vomiting everything, convulsions, and lethargy.
-- **Step 2: Vitals & Respiratory Timer**: Integrated 60-second timer to measure age-adjusted respiratory rate and assess fast breathing threshold.
-- **Step 3: Multi-System Symptoms Assessment**:
-  - **Respiratory / Cough**: Differentiates between Severe Pneumonia, Pneumonia, and No Pneumonia (Cough/Cold).
-  - **Diarrhea & Dehydration**: Classifies into Severe Dehydration (Plan C), Some Dehydration (Plan B), or No Dehydration (Plan A) with Zinc/ORS dosing.
-  - **Fever & Malaria**: Interprets Malaria Rapid Diagnostic Tests (mRDT) in high-risk transmission zones and checks for stiff neck or fontanelle bulge.
-  - **Ear Problem**: Evaluates ear discharge and tender swelling behind the ear (Mastoiditis).
-  - **Nutrition & Anemia**: Calculates MUAC thresholds (<115mm Red, 115-124mm Yellow, >=125mm Green), bilateral oedema, and palmar pallor.
+- General Danger Signs: screens for inability to drink or breastfeed, vomiting everything, convulsions, and lethargy.
+- Vitals and Respiratory Timer: an integrated timer measures age adjusted respiratory rate and flags the fast breathing threshold.
+- Multi system symptom assessment, covering:
+  - Respiratory and cough, classifying into Severe Pneumonia, Pneumonia, or No Pneumonia.
+  - Diarrhea and dehydration, classifying into Severe Dehydration (Plan C), Some Dehydration (Plan B), or No Dehydration (Plan A), with ORS and zinc dosing guidance.
+  - Fever and malaria, including interpretation of malaria rapid diagnostic tests and checks for stiff neck or bulging fontanelle.
+  - Ear problems, evaluating discharge and tender swelling behind the ear.
+  - Nutrition and anemia, calculating MUAC thresholds, bilateral oedema, and palmar pallor.
 
-### 2. 🤖 AfyaGPT AI Decision Support Assistant
-- **Persistent Room DB Chat**: AI Chat conversations are linked to patient profiles in local SQLite database (`chat_messages` table).
-- **Context-Aware Assistance**: Instant AI guidance on WHO IMCI protocol classifications, first-dose antibiotic calculations (e.g., Amoxicillin 40-50mg/kg), and hospital referral criteria.
+### AI Decision Support Assistant
 
-### 3. 💉 Kenya KEPI Immunization Schedule Tracker
-- **Automatic 14-Dose Schedule**: Upon registering a newborn or infant, AfyaGPT automatically generates the official Kenya Expanded Programme on Immunization (KEPI) schedule (BCG, OPV-0 through OPV-3, Penta-1 to 3, PCV-1 to 3, Rota-1 & 2, Vitamin A, MR-1 & 2, Yellow Fever).
-- **Persistent Vaccine Logging**: Track administered dates, status (PENDING/GIVEN/OVERDUE), and batch numbers directly to disk.
+Chat conversations are stored locally and linked to individual patient profiles in the Room database. The assistant provides guidance on IMCI protocol classifications, first dose antibiotic calculations, and hospital referral criteria.
 
-### 4. 📚 Offline Clinical Library Protocols
-- Complete offline-ready clinical reference for:
-  1. *Severe Pneumonia & Acute Respiratory Infections*
-  2. *Uncomplicated & Severe Malaria (ACT / Coartem)*
-  3. *Acute Diarrhea & Dehydration Management Plans*
-  4. *Severe Acute Malnutrition (SAM & RUTF)*
-  5. *Acute Otitis Media & Mastoiditis*
-  6. *Neonatal Sepsis & Hyperbilirubinemia (Jaundice)*
+### Immunization Tracker
 
-### 5. 🎨 Modern Blue & Yellow Healthcare Design
-- Custom Material 3 theme incorporating **Deep Royal Blue (`#0D47A1`)**, **Sunburst Gold (`#FBC02D`)**, and **Soft Warm Yellow Card Containers (`#FFF9C4`)**.
-- Fully theme-aware components that dynamically adjust for Light, Dark, and Brand themes.
+When a newborn or infant is registered, the app generates the official Kenya Expanded Programme on Immunization schedule automatically, covering BCG, OPV, Penta, PCV, Rota, Vitamin A, MR, and Yellow Fever doses. Administered dates, status, and batch numbers are logged and persisted locally.
 
----
+### Offline Clinical Library
 
-## 🛠️ Architecture & Tech Stack
+A reference library is available fully offline, covering:
 
-AfyaGPT is built using modern Android development practices following Clean Architecture and MVVM principles.
+- Severe pneumonia and acute respiratory infections
+- Uncomplicated and severe malaria treatment
+- Acute diarrhea and dehydration management plans
+- Severe acute malnutrition and RUTF guidance
+- Acute otitis media and mastoiditis
+- Neonatal sepsis and jaundice
+
+## Tech Stack
+
+The app is built with Clean Architecture and MVVM.
+
+- Language: Kotlin
+- UI: Jetpack Compose with Material 3
+- Dependency injection: Dagger Hilt
+- Local database: Room
+- Preferences and session state: Jetpack DataStore
+- Annotation processing: Kotlin Symbol Processing (KSP)
+- Async and reactive state: Kotlin Coroutines, StateFlow, and SharedFlow
+- Build system: Gradle, JDK 17
+
+Data flows from the Compose UI layer down through Hilt scoped ViewModels, into repositories, and finally into either Room (patients, users, chat, immunization records) or DataStore (session and theme preferences).
+
+## Project Structure
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                       UI Layer (Compose)                   │
-│   Screens · Components · Navigation (Jetpack Navigation)    │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ StateFlow / ViewModel
-┌──────────────────────────────▼──────────────────────────────┐
-│                    ViewModel Layer (Hilt)                   │
-│   TriageViewModel · HomeViewModel · PatientViewModel ...    │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ Coroutines / Flow
-┌──────────────────────────────▼──────────────────────────────┐
-│                    Repository / Data Layer                  │
-│   PatientRepository · ChatRepository · VaccinationRepo     │
-└──────────────────────┬──────────────────────┬───────────────┘
-                       │                      │
-┌──────────────────────▼───────┐   ┌──────────▼──────────────┐
-│    Room SQLite Database      │   │   Jetpack DataStore     │
-│ (Users, Patients, Chat, EPI) │   │ (Session & Theme State) │
-└──────────────────────────────┘   └─────────────────────────┘
-```
-
-- **Programming Language**: 100% Kotlin
-- **UI Framework**: Jetpack Compose + Material 3
-- **Dependency Injection**: Dagger Hilt
-- **Local Database**: Room SQLite Database (Version 4)
-- **Preferences & Session**: Jetpack DataStore Preferences
-- **Annotation Processor**: Kotlin Symbol Processing (KSP)
-- **Async & Reactive Flow**: Kotlin Coroutines & `StateFlow` / `SharedFlow`
-- **Build System**: Gradle 9.3.1 with JDK 17
-
----
-
-## 📁 Directory Structure
-
-```text
 com.example.afyagpt/
-├── AfyaGPTApp.kt              # Application entry point (@HiltAndroidApp)
+├── AfyaGPTApp.kt              Application entry point
 ├── data/
-│   ├── local/                 # Room Database configuration, Entities & DAOs
-│   │   ├── AfyaGPTDatabase.kt
-│   │   ├── dao/               # UserDao, PatientDao, TriageDao, VaccinationDao, ChatMessageDao
-│   │   └── entity/            # UserEntity, PatientEntity, TriageSessionEntity, VaccinationEntity, ChatMessageEntity
-│   ├── preferences/           # UserPreferences (DataStore)
-│   └── repository/            # AuthRepository, PatientRepository, VaccinationRepository, ChatRepository
-├── di/                        # Hilt DI Modules (DatabaseModule, AppModule)
-├── domain/                    # Clean Domain Models (User, Patient, RiskLevel)
+│   ├── local/                 Room database, entities, and DAOs
+│   ├── preferences/           UserPreferences (DataStore)
+│   └── repository/            AuthRepository, PatientRepository, VaccinationRepository, ChatRepository
+├── di/                        Hilt modules
+├── domain/                    Domain models
 ├── ui/
-│   ├── components/            # Reusable M3 UI components (AfyaTopBar, AfyaBottomNav, AfyaCard, AfyaRiskBadge)
-│   ├── navigation/            # AppRoute & NavGraph
-│   ├── screens/               # Screen composables & ViewModels
-│   │   ├── auth/              # SplashScreen, LoginScreen, SignUpScreen, ForgotPinScreen
-│   │   ├── home/              # HomeScreen & HomeViewModel
-│   │   ├── triage/            # Triage workflow step screens, TriageResultScreen, AiChatSheet
-│   │   ├── patients/          # PatientListScreen, PatientDetailScreen, RegisterPatientScreen
-│   │   ├── immunization/      # ImmunizationScreen & ImmunizationViewModel
-│   │   ├── library/           # LibraryScreen & LibraryViewModel
-│   │   └── profile/           # ProfileScreen & ProfileViewModel
-│   └── theme/                 # Color.kt, Theme.kt, Typography.kt, Shapes.kt
-└── util/                      # PinHasher, PatientIdGenerator, DateTimeUtils, KenyaEpiSchedule
+│   ├── components/            Shared UI components
+│   ├── navigation/            App routes and navigation graph
+│   ├── screens/                Screen composables and ViewModels, organized by feature
+│   └── theme/                  Color, typography, and shape definitions
+└── util/                      Helper utilities (ID generation, date handling, EPI schedule logic)
 ```
 
----
+## Getting Started
 
-## 🚀 Getting Started
+### Requirements
 
-### Prerequisites
-- **Android Studio**: Ladybug (2024.2.1) or newer
-- **JDK**: Java 17 or higher
-- **Android SDK**: API Level 26 (Android 8.0 Oreo) minimum, Target API 34/35
+- Android Studio Ladybug (2024.2.1) or newer
+- JDK 17 or higher
+- Android SDK, minimum API 26, target API 34 or 35
 
 ### Building locally
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/your-org/AfyaGPT.git
-   cd AfyaGPT
-   ```
+Clone the repository:
 
-2. **Make `gradlew` executable** (Linux/macOS):
-   ```bash
-   chmod +x gradlew
-   ```
-
-3. **Build the Debug APK**:
-   ```bash
-   ./gradlew assembleDebug
-   ```
-
-   The generated APK will be available at `app/build/outputs/apk/debug/app-debug.apk`.
-
----
-
-## ⚙️ CI/CD Integration
-
-AfyaGPT uses **GitHub Actions** for continuous integration. On every push or pull request to `main`, the workflow compiles the project, runs symbol processing, builds the APK, and uploads the artifact.
-
-Workflow file: `.github/workflows/android-ci.yml`
-
----
-
-## 📄 License
-
-```text
-Copyright (c) 2026 AfyaGPT Project Team.
-Distributed under the Apache License, Version 2.0.
+```bash
+git clone https://github.com/your-org/AfyaGPT.git
+cd AfyaGPT
 ```
+
+On Linux or macOS, make the Gradle wrapper executable:
+
+```bash
+chmod +x gradlew
+```
+
+Build the debug APK:
+
+```bash
+./gradlew assembleDebug
+```
+
+The generated APK is placed at `app/build/outputs/apk/debug/app-debug.apk`.
+
+## CI/CD
+
+The project uses GitHub Actions for continuous integration. On every push or pull request to main, the workflow compiles the project, runs annotation processing, builds the APK, and uploads it as a build artifact. The workflow file is located at `.github/workflows/android-ci.yml`.
+
+## License
+
+Copyright 2026 AfyaGPT Project Team. Distributed under the Apache License, Version 2.0.
