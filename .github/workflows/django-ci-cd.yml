@@ -1,0 +1,113 @@
+name: Django CI/CD to Heroku
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+concurrency:
+  group: heroku-ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Django checks
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: backend
+
+    env:
+      DJANGO_DEBUG: "True"
+      SECRET_KEY: ci-only-secret-key
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run migrations on CI SQLite database
+        run: python manage.py migrate --noinput
+
+      - name: Run Django system checks
+        run: python manage.py check
+
+      - name: Collect static files
+        run: python manage.py collectstatic --noinput
+
+  deploy:
+    name: Deploy to Heroku
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Heroku CLI
+        run: |
+          curl https://cli-assets.heroku.com/install-ubuntu.sh | sh
+          heroku --version
+
+      - name: Deploy application
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+          HEROKU_EMAIL: ${{ secrets.HEROKU_EMAIL }}
+        run: |
+          set -euo pipefail
+          cat > ~/.netrc <<EOF
+          machine api.heroku.com
+            login ${HEROKU_EMAIL}
+            password ${HEROKU_API_KEY}
+          machine git.heroku.com
+            login ${HEROKU_EMAIL}
+            password ${HEROKU_API_KEY}
+          EOF
+          chmod 600 ~/.netrc
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote remove heroku 2>/dev/null || true
+          git remote add heroku "https://git.heroku.com/${HEROKU_APP_NAME}.git"
+          git subtree push --prefix backend heroku main
+
+      - name: Verify deployment
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+          HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
+        run: |
+          set -euo pipefail
+          HEALTHCHECK_URL="https://${HEROKU_APP_NAME}.herokuapp.com/health/"
+          for attempt in {1..18}; do
+            response="$(curl -fsS "${HEALTHCHECK_URL}" || true)"
+            if [ "${response}" = "ok" ]; then
+              echo "Health check passed."
+              exit 0
+            fi
+            echo "Waiting for health check (${attempt}/18)..."
+            sleep 10
+          done
+          echo "Health check failed. Rolling back the Heroku release."
+          heroku rollback --app "${HEROKU_APP_NAME}" --yes
+          exit 1

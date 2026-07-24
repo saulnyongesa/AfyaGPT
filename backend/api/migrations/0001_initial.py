@@ -1,0 +1,87 @@
+from django.db import migrations, models
+import django.db.models.deletion
+
+class Migration(migrations.Migration):
+
+    initial = True
+
+    dependencies = [
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='UserProfile',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('full_name', models.CharField(max_length=255)),
+                ('phone_number', models.CharField(max_length=20, unique=True)),
+                ('email', models.EmailField(blank=True, max_length=254, null=True)),
+                ('profession', models.CharField(max_length=100)),
+                ('professional_number', models.CharField(blank=True, max_length=100, null=True)),
+                ('facility_name', models.CharField(max_length=255)),
+                ('county', models.CharField(max_length=100)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Patient',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('patient_uid', models.CharField(max_length=50, unique=True)),
+                ('full_name', models.CharField(max_length=255)),
+                ('date_of_birth', models.DateField()),
+                ('sex', models.CharField(choices=[('Male', 'Male'), ('Female', 'Female')], max_length=10)),
+                ('caregiver_name', models.CharField(blank=True, max_length=255, null=True)),
+                ('guardian_phone', models.CharField(blank=True, max_length=20, null=True)),
+                ('birth_certificate_number', models.CharField(blank=True, max_length=100, null=True)),
+                ('facility_name', models.CharField(max_length=255)),
+                ('county', models.CharField(max_length=100)),
+                ('risk_level', models.CharField(default='LOW', max_length=20)),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='TriageSession',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('danger_signs', models.TextField(blank=True, default='')),
+                ('temperature', models.FloatField(blank=True, null=True)),
+                ('respiratory_rate', models.IntegerField(blank=True, null=True)),
+                ('weight_kg', models.FloatField(blank=True, null=True)),
+                ('muac_mm', models.FloatField(blank=True, null=True)),
+                ('cough_classification', models.CharField(blank=True, max_length=100, null=True)),
+                ('diarrhea_classification', models.CharField(blank=True, max_length=100, null=True)),
+                ('fever_classification', models.CharField(blank=True, max_length=100, null=True)),
+                ('ear_classification', models.CharField(blank=True, max_length=100, null=True)),
+                ('nutrition_classification', models.CharField(blank=True, max_length=100, null=True)),
+                ('overall_risk', models.CharField(default='LOW', max_length=50)),
+                ('treatment_notes', models.TextField(blank=True, default='')),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('patient', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='triage_sessions', to='api.patient')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='Vaccination',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('vaccine_name', models.CharField(max_length=100)),
+                ('target_disease', models.CharField(max_length=255)),
+                ('dose_number', models.IntegerField(default=1)),
+                ('is_given', models.BooleanField(default=False)),
+                ('given_date', models.DateField(blank=True, null=True)),
+                ('batch_number', models.CharField(blank=True, max_length=100, null=True)),
+                ('patient', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='vaccinations', to='api.patient')),
+            ],
+        ),
+        migrations.CreateModel(
+            name='ChatMessage',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('sender', models.CharField(choices=[('USER', 'USER'), ('AI', 'AI')], max_length=20)),
+                ('message_text', models.TextField()),
+                ('timestamp', models.DateTimeField(auto_now_add=True)),
+                ('patient', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='chat_messages', to='api.patient')),
+            ],
+        ),
+    ]
