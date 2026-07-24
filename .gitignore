@@ -35,6 +35,7 @@ local.defaults.properties
 *.iml
 *.ipr
 *.iws
+backend/.venv
 
 # Exceptions — project-wide settings worth sharing:
 !.idea/codeStyles/
