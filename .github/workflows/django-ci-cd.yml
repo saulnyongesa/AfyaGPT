@@ -45,7 +45,9 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run migrations on CI SQLite database
-        run: python manage.py migrate --noinput
+        run: |
+          python manage.py makemigrations
+          python manage.py migrate --noinput
 
       - name: Run Django system checks
         run: python manage.py check
