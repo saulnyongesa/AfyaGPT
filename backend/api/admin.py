@@ -1,10 +1,14 @@
 from django.contrib import admin
-from .models import UserProfile, Patient, TriageSession, Vaccination, ChatMessage
+from .models import (
+    UserProfile, Patient, TriageSession, Vaccination, ChatMessage,
+    NewsArticle, ContactInquiry
+)
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
     list_display = ('full_name', 'phone_number', 'profession', 'facility_name', 'county', 'created_at')
-    search_fields = ('full_name', 'phone_number', 'facility_name')
+    search_fields = ('full_name', 'phone_number', 'facility_name', 'county')
+    list_filter = ('profession', 'county', 'malaria_risk_zone')
 
 @admin.register(Patient)
 class PatientAdmin(admin.ModelAdmin):
@@ -26,3 +30,16 @@ class VaccinationAdmin(admin.ModelAdmin):
 class ChatMessageAdmin(admin.ModelAdmin):
     list_display = ('patient', 'sender', 'timestamp')
     list_filter = ('sender',)
+
+@admin.register(NewsArticle)
+class NewsArticleAdmin(admin.ModelAdmin):
+    list_display = ('title', 'category', 'author', 'published_at', 'is_featured')
+    prepopulated_fields = {'slug': ('title',)}
+    list_filter = ('category', 'is_featured')
+    search_fields = ('title', 'summary', 'content')
+
+@admin.register(ContactInquiry)
+class ContactInquiryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'phone', 'subject', 'created_at', 'is_resolved')
+    list_filter = ('is_resolved', 'created_at')
+    search_fields = ('name', 'email', 'subject', 'message')

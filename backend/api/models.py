@@ -82,3 +82,39 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"[{self.sender}] {self.message_text[:30]}..."
+
+
+class NewsArticle(models.Model):
+    """News and updates model for the landing page."""
+    title = models.CharField(max_length=255)
+    slug = models.SlugField(unique=True)
+    summary = models.TextField()
+    content = models.TextField()
+    category = models.CharField(max_length=100, default='Health Impact')
+    author = models.CharField(max_length=100, default='AfyaGPT Team')
+    image_url = models.URLField(blank=True, null=True)
+    published_at = models.DateTimeField(auto_now_add=True)
+    is_featured = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-published_at']
+
+    def __str__(self):
+        return self.title
+
+
+class ContactInquiry(models.Model):
+    """Contact form submissions from the landing page."""
+    name = models.CharField(max_length=255)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_resolved = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Inquiry from {self.name} - {self.subject}"

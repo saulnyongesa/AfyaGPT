@@ -98,7 +98,7 @@ jobs:
           HEROKU_APP_NAME: ${{ secrets.HEROKU_APP_NAME }}
         run: |
           set -euo pipefail
-          HEALTHCHECK_URL="https://${HEROKU_APP_NAME}.herokuapp.com/health/"
+          HEALTHCHECK_URL="https://afyagpt-backend-493c86fa66a5.herokuapp.com/health/"
           for attempt in {1..18}; do
             response="$(curl -fsS "${HEALTHCHECK_URL}" || true)"
             if [ "${response}" = "ok" ]; then

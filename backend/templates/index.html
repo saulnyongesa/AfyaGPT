@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AfyaGPT — AI Clinical Decision Support for Frontline Healthcare</title>
+    <meta name="description" content="Offline-first clinical decision support application for Community Health Workers, Nurses, and Clinical Officers in Kenya & Sub-Saharan Africa based on WHO IMCI guidelines.">
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --afya-primary-blue: #0D47A1;
+            --afya-vibrant-blue: #1976D2;
+            --afya-accent-gold: #FBC02D;
+            --afya-soft-yellow: #FFF9C4;
+            --afya-dark-surface: #0A192F;
+            --afya-card-bg: #FFFFFF;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #2D3748;
+            background-color: #F8FAFC;
+        }
+
+        /* Navbar Styling */
+        .navbar-afya {
+            background-color: var(--afya-primary-blue);
+            box-shadow: 0 4px 20px rgba(13, 71, 161, 0.15);
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.5rem;
+            color: #FFFFFF !important;
+        }
+
+        .navbar-brand span {
+            color: var(--afya-accent-gold);
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--afya-accent-gold) !important;
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, #0D47A1 0%, #1565C0 50%, #0D47A1 100%);
+            color: white;
+            padding: 100px 0 80px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 800;
+            line-height: 1.2;
+        }
+
+        .hero-title span {
+            color: var(--afya-accent-gold);
+        }
+
+        .hero-badge {
+            background-color: rgba(251, 192, 45, 0.2);
+            color: var(--afya-accent-gold);
+            border: 1px solid var(--afya-accent-gold);
+            border-radius: 50px;
+            padding: 6px 16px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .btn-afya-gold {
+            background-color: var(--afya-accent-gold);
+            color: #0D47A1;
+            font-weight: 700;
+            padding: 12px 30px;
+            border-radius: 12px;
+            border: none;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .btn-afya-gold:hover {
+            background-color: #FDD835;
+            color: #0D47A1;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(251, 192, 45, 0.4);
+        }
+
+        .btn-afya-outline {
+            border: 2px solid white;
+            color: white;
+            font-weight: 600;
+            padding: 12px 30px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-afya-outline:hover {
+            background-color: white;
+            color: var(--afya-primary-blue);
+        }
+
+        /* Stats Cards */
+        .stat-box {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            text-align: center;
+            border-top: 4px solid var(--afya-primary-blue);
+        }
+
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--afya-primary-blue);
+        }
+
+        /* Feature Cards */
+        .feature-card {
+            background: var(--afya-soft-yellow);
+            border-radius: 20px;
+            padding: 32px;
+            border: 1px solid rgba(251, 192, 45, 0.3);
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(13, 71, 161, 0.1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            background: var(--afya-primary-blue);
+            color: var(--afya-accent-gold);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        /* Section Titles */
+        .section-tag {
+            color: var(--afya-primary-blue);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.85rem;
+        }
+
+        .section-title {
+            font-size: 2.3rem;
+            font-weight: 800;
+            color: var(--afya-dark-surface);
+        }
+
+        /* Team Cards */
+        .team-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.06);
+            text-align: center;
+            padding: 30px;
+        }
+
+        .team-avatar {
+            width: 110px;
+            height: 110px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid var(--afya-accent-gold);
+            margin: 0 auto 16px;
+        }
+
+        /* Footer */
+        .footer-afya {
+            background-color: var(--afya-dark-surface);
+            color: rgba(255,255,255,0.7);
+            padding: 60px 0 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-afya sticky-top py-3">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-2" href="#">
+                <i class="fa-solid fa-square-h text-warning fs-2"></i>
+                Afya<span>GPT</span>
+            </a>
+            <button class="navbar-toggler text-white border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <i class="fa-solid fa-bars fs-3"></i>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-menu navbar-nav ms-auto align-items-lg-center gap-lg-3">
+                    <li class="nav-item"><a class="nav-link" href="#about">About</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#features">Features</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#imci">IMCI Protocols</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#news">News</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#team">Team</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#contact">Contact</a></li>
+                    <li class="nav-item ms-lg-2">
+                        <a class="btn btn-outline-light rounded-pill px-3 py-1 btn-sm" href="/admin/" target="_blank">
+                            <i class="fa-solid fa-user-shield me-1"></i> Admin Portal
+                        </a>
+                    </li>
+                    <li class="nav-item ms-lg-1">
+                        <a class="btn btn-afya-gold btn-sm rounded-pill px-3 py-2" href="#download">
+                            <i class="fa-solid fa-download me-1"></i> Get App
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Messages Alert -->
+    {% if messages %}
+    <div class="container mt-4">
+        {% for message in messages %}
+        <div class="alert alert-success alert-dismissible fade show rounded-4 shadow-sm" role="alert">
+            <i class="fa-solid fa-circle-check me-2"></i> {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center gy-5">
+                <div class="col-lg-7">
+                    <div class="hero-badge mb-3">
+                        <i class="fa-solid fa-wifi-slash me-1"></i> 100% Offline-First Clinical AI
+                    </div>
+                    <h1 class="hero-title mb-4">
+                        Health Intelligence for Every <span>Community</span>
+                    </h1>
+                    <p class="lead mb-4 opacity-90 fw-normal">
+                        AfyaGPT empowers Community Health Workers (CHWs), Nurses, and Clinical Officers across Kenya and Sub-Saharan Africa with automated WHO IMCI pediatric triage, KEPI immunization tracking, and persistent AI decision support.
+                    </p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="#download" class="btn btn-afya-gold">
+                            <i class="fa-solid fa-mobile-screen me-2"></i> Download Android APK
+                        </a>
+                        <a href="#features" class="btn btn-afya-outline">
+                            <i class="fa-solid fa-circle-info me-2"></i> Explore Platform
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-5 text-center">
+                    <div class="p-4 bg-white rounded-4 shadow-lg text-dark">
+                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                            <span class="fw-bold text-primary"><i class="fa-solid fa-notes-medical me-2"></i>Live System Metrics</span>
+                            <span class="badge bg-success">Online Sync Active</span>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3 text-start">
+                                    <div class="fs-4 fw-bold text-primary">{{ stats.total_patients }}</div>
+                                    <div class="small text-muted">Registered Patients</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3 text-start">
+                                    <div class="fs-4 fw-bold text-primary">{{ stats.total_triage }}</div>
+                                    <div class="small text-muted">IMCI Assessments</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3 text-start">
+                                    <div class="fs-4 fw-bold text-primary">{{ stats.total_vaccines }}</div>
+                                    <div class="small text-muted">KEPI Vaccinations</div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 bg-light rounded-3 text-start">
+                                    <div class="fs-4 fw-bold text-primary">{{ stats.total_workers }}</div>
+                                    <div class="small text-muted">Active Health Workers</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="py-5 bg-white">
+        <div class="container py-4">
+            <div class="row align-items-center gy-4">
+                <div class="col-lg-6">
+                    <span class="section-tag">About AfyaGPT</span>
+                    <h2 class="section-title mb-3">Bridging the Frontline Healthcare Gap in Rural Clinics</h2>
+                    <p class="text-muted lead fs-6 mb-4">
+                        In many health posts across Kenya, frontline health workers face high patient loads and zero internet connectivity. AfyaGPT brings WHO IMCI guidelines to life through structured algorithms, automated respiratory rate timing, and offline AI decision support.
+                    </p>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="fa-solid fa-shield-halved text-primary fs-4 mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Strict WHO IMCI & Kenya MoH Compliance</h6>
+                                <p class="small text-muted mb-0">Follows exact pediatric triage algorithms for danger signs, respiratory infections, diarrhea, malaria, and severe malnutrition.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start gap-3">
+                            <i class="fa-solid fa-database text-primary fs-4 mt-1"></i>
+                            <div>
+                                <h6 class="fw-bold mb-1">Zero-Downtime Room SQLite Engine</h6>
+                                <p class="small text-muted mb-0">All patient profiles, triage history, and KEPI vaccine schedules are saved locally on disk and synced seamlessly when online.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <img src="https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?auto=format&fit=crop&w=800&q=80" alt="Healthcare Worker" class="img-fluid rounded-4 shadow">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Features Section -->
+    <section id="features" class="py-5">
+        <div class="container py-4">
+            <div class="text-center max-w-700 mx-auto mb-5">
+                <span class="section-tag">Core Features</span>
+                <h2 class="section-title">Designed for Field Clinical Excellence</h2>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fa-solid fa-stethoscope"></i></div>
+                        <h5 class="fw-bold mb-3">WHO IMCI Triage Engine</h5>
+                        <p class="text-muted small mb-0">Structured 5-step triage covering Danger Signs, Vitals 60s Timer, Respiratory, Diarrhea, Malaria, Ear Problems, and MUAC Nutrition.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fa-solid fa-robot"></i></div>
+                        <h5 class="fw-bold mb-3">AfyaGPT AI Assistant</h5>
+                        <p class="text-muted small mb-0">Persistent AI decision support linked to patient profiles, offering first-dose antibiotic dosing and emergency referral criteria.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fa-solid fa-syringe"></i></div>
+                        <h5 class="fw-bold mb-3">KEPI Vaccine Tracker</h5>
+                        <p class="text-muted small mb-0">Auto-generates the official 14-dose Kenya Expanded Programme on Immunization schedule upon newborn registration.</p>
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-3">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="fa-solid fa-book-medical"></i></div>
+                        <h5 class="fw-bold mb-3">124+ Offline Protocols</h5>
+                        <p class="text-muted small mb-0">Instant access to clinical treatment protocols for Pneumonia, Malaria ACTs, Diarrhea Plans A/B/C, SAM, and Neonatal Sepsis.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- News & Impact Section -->
+    <section id="news" class="py-5 bg-white">
+        <div class="container py-4">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <span class="section-tag">Updates & Insights</span>
+                    <h2 class="section-title">Latest News & Clinical Impact</h2>
+                </div>
+            </div>
+            <div class="row g-4">
+                {% for article in news_articles %}
+                <div class="col-md-4">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+                        <div class="card-body p-4">
+                            <span class="badge bg-primary-subtle text-primary mb-2 fw-semibold">{{ article.category }}</span>
+                            <h5 class="fw-bold card-title mb-3">{{ article.title }}</h5>
+                            <p class="text-muted small card-text mb-4">{{ article.summary }}</p>
+                            <div class="d-flex align-items-center justify-content-between border-top pt-3 text-muted small">
+                                <span><i class="fa-regular fa-user me-1"></i> {{ article.author }}</span>
+                                <span><i class="fa-regular fa-calendar me-1"></i> {{ article.published_at }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team" class="py-5">
+        <div class="container py-4">
+            <div class="text-center max-w-700 mx-auto mb-5">
+                <span class="section-tag">Our Leadership</span>
+                <h2 class="section-title">Driven by Health Equity & Technology</h2>
+            </div>
+            <div class="row g-4">
+                {% for member in team_members %}
+                <div class="col-md-4">
+                    <div class="team-card h-100">
+                        <img src="{{ member.avatar }}" alt="{{ member.name }}" class="team-avatar">
+                        <h5 class="fw-bold mb-1">{{ member.name }}</h5>
+                        <div class="text-primary small fw-semibold mb-3">{{ member.role }}</div>
+                        <p class="text-muted small mb-0">{{ member.bio }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Form Section -->
+    <section id="contact" class="py-5 bg-white">
+        <div class="container py-4">
+            <div class="row align-items-center gy-4">
+                <div class="col-lg-5">
+                    <span class="section-tag">Get In Touch</span>
+                    <h2 class="section-title mb-3">Partner with AfyaGPT</h2>
+                    <p class="text-muted mb-4">Interested in deploying AfyaGPT at your health facility or sub-county? Contact our team for clinical onboarding and system integration.</p>
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-light p-3 rounded-circle text-primary"><i class="fa-solid fa-location-dot fs-5"></i></div>
+                            <div>
+                                <div class="fw-bold">Nairobi Headquarters</div>
+                                <div class="small text-muted">Kilimani Health Tech Hub, Nairobi, Kenya</div>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-light p-3 rounded-circle text-primary"><i class="fa-solid fa-envelope fs-5"></i></div>
+                            <div>
+                                <div class="fw-bold">Email Us</div>
+                                <div class="small text-muted">support@afyagpt.org</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-7">
+                    <form method="POST" action="/#contact" class="p-4 p-md-5 bg-light rounded-4 border">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Full Name *</label>
+                                <input type="text" name="name" class="form-control rounded-3" placeholder="Saul Nyongesa" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Email Address *</label>
+                                <input type="email" name="email" class="form-control rounded-3" placeholder="saul@facility.org" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Phone Number</label>
+                                <input type="tel" name="phone" class="form-control rounded-3" placeholder="0712345678">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold">Subject</label>
+                                <input type="text" name="subject" class="form-control rounded-3" placeholder="Facility Deployment Inquiry">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Message *</label>
+                                <textarea name="message" rows="4" class="form-control rounded-3" placeholder="Tell us about your clinic or healthcare network..." required></textarea>
+                            </div>
+                            <div class="col-12 mt-4">
+                                <button type="submit" class="btn btn-afya-gold w-100 py-3">
+                                    <i class="fa-solid fa-paper-plane me-2"></i> Send Message
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download App Section -->
+    <section id="download" class="py-5 text-white" style="background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%);">
+        <div class="container text-center py-4">
+            <h2 class="fw-extrabold fs-1 mb-3">Ready to Transform Community Healthcare?</h2>
+            <p class="lead opacity-90 max-w-700 mx-auto mb-4">Download the official AfyaGPT Android application (v1.0.0) for zero-latency, offline-first clinical decision support.</p>
+            <a href="https://github.com/saulnyongesa/AfyaGPT/releases" class="btn btn-afya-gold btn-lg px-5 py-3 rounded-pill shadow-lg">
+                <i class="fa-brands fa-android me-2 fs-4 align-middle"></i> Download Android APK (Debug)
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-afya">
+        <div class="container">
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <h5 class="text-white fw-bold mb-3"><i class="fa-solid fa-square-h text-warning me-2"></i>AfyaGPT</h5>
+                    <p class="small">Empowering frontline healthcare workers across Sub-Saharan Africa with intelligent offline decision support.</p>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-white fw-bold mb-3">Quick Links</h6>
+                    <ul class="list-unstyled small d-flex flex-column gap-2">
+                        <li><a href="#about" class="text-white-50 text-decoration-none">About Platform</a></li>
+                        <li><a href="#imci" class="text-white-50 text-decoration-none">WHO IMCI Guidelines</a></li>
+                        <li><a href="/admin/" class="text-white-50 text-decoration-none">Super Admin Dashboard</a></li>
+                        <li><a href="/api/" class="text-white-50 text-decoration-none">REST API Documentation</a></li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6 class="text-white fw-bold mb-3">Compliance & Standards</h6>
+                    <p class="small text-white-50 mb-0">Compliant with Kenya Ministry of Health guidelines, WHO IMCI protocols, and KEPI vaccination standards.</p>
+                </div>
+            </div>
+            <div class="border-top border-secondary pt-3 text-center small text-white-50">
+                Copyright &copy; 2026 AfyaGPT Project Team. Distributed under Apache License, Version 2.0.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

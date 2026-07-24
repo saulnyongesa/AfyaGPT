@@ -46,6 +46,40 @@ class Migration(migrations.Migration):
             ],
         ),
         migrations.CreateModel(
+            name='NewsArticle',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=255)),
+                ('slug', models.SlugField(unique=True)),
+                ('summary', models.TextField()),
+                ('content', models.TextField()),
+                ('category', models.CharField(default='Health Impact', max_length=100)),
+                ('author', models.CharField(default='AfyaGPT Team', max_length=100)),
+                ('image_url', models.URLField(blank=True, null=True)),
+                ('published_at', models.DateTimeField(auto_now_add=True)),
+                ('is_featured', models.BooleanField(default=False)),
+            ],
+            options={
+                'ordering': ['-published_at'],
+            },
+        ),
+        migrations.CreateModel(
+            name='ContactInquiry',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('name', models.CharField(max_length=255)),
+                ('email', models.EmailField(max_length=254)),
+                ('phone', models.CharField(blank=True, max_length=20, null=True)),
+                ('subject', models.CharField(max_length=255)),
+                ('message', models.TextField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('is_resolved', models.BooleanField(default=False)),
+            ],
+            options={
+                'ordering': ['-created_at'],
+            },
+        ),
+        migrations.CreateModel(
             name='TriageSession',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
