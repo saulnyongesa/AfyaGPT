@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -79,7 +80,17 @@ fun LoginScreen(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(modifier = Modifier.height(32.dp))
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val isOnline = remember { com.example.afyagpt.domain.suggestion.ConnectivityChecker(context).isOnline() }
+
+        if (!isOnline) {
+            AfyaAlertBanner(
+                title = "No Internet Connection",
+                message = "You are currently offline. Initial cloud login for a new device requires active Wi-Fi or Mobile Data.",
+                type = BannerType.WARNING,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+        }
 
         // Lockout compact banner (stays visible while counting down)
         if (state.isLockedOut) {

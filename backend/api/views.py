@@ -286,6 +286,72 @@ def stakeholder_dashboard(request):
             log_audit_event(admin_profile, 'CMS_STAKEHOLDER_SAVED', 'Stakeholder', stakeholder.id, stakeholder.full_name, request)
             messages.success(request, f"Saved stakeholder {stakeholder.full_name}.")
 
+        # 7. Comprehensive Deletion Actions
+        elif action == 'delete_user' and user.is_superuser:
+            user_id = request.POST.get('target_id')
+            u_obj = UserProfile.objects.filter(id=user_id).first()
+            if u_obj:
+                name = u_obj.full_name
+                u_obj.delete()
+                log_audit_event(admin_profile, 'USER_DELETED', 'UserProfile', user_id, f"Deleted staff {name}", request)
+                messages.success(request, f"Staff account for {name} has been permanently deleted.")
+
+        elif action == 'delete_patient' and user.is_superuser:
+            p_id = request.POST.get('target_id')
+            p_obj = Patient.objects.filter(id=p_id).first()
+            if p_obj:
+                name = p_obj.full_name
+                p_obj.delete()
+                log_audit_event(admin_profile, 'PATIENT_DELETED', 'Patient', p_id, f"Deleted patient {name}", request)
+                messages.success(request, f"Patient profile for {name} has been deleted.")
+
+        elif action == 'edit_patient' and user.is_superuser:
+            p_id = request.POST.get('patient_id')
+            p_obj = Patient.objects.filter(id=p_id).first()
+            if p_obj:
+                p_obj.full_name = request.POST.get('full_name', p_obj.full_name).strip()
+                p_obj.caregiver_name = request.POST.get('caregiver_name', p_obj.caregiver_name).strip()
+                p_obj.guardian_phone = request.POST.get('guardian_phone', p_obj.guardian_phone).strip()
+                p_obj.facility_name = request.POST.get('facility_name', p_obj.facility_name).strip()
+                p_obj.risk_level = request.POST.get('risk_level', p_obj.risk_level).strip()
+                p_obj.save()
+                log_audit_event(admin_profile, 'PATIENT_EDITED', 'Patient', p_id, f"Updated patient {p_obj.full_name}", request)
+                messages.success(request, f"Updated patient record for {p_obj.full_name}.")
+
+        elif action == 'delete_triage' and user.is_superuser:
+            t_id = request.POST.get('target_id')
+            t_obj = TriageSession.objects.filter(id=t_id).first()
+            if t_obj:
+                t_obj.delete()
+                log_audit_event(admin_profile, 'TRIAGE_DELETED', 'TriageSession', t_id, "Deleted triage session", request)
+                messages.success(request, f"Triage assessment record #{t_id} deleted.")
+
+        elif action == 'delete_facility' and user.is_superuser:
+            f_id = request.POST.get('target_id')
+            f_obj = HealthFacility.objects.filter(id=f_id).first()
+            if f_obj:
+                name = f_obj.name
+                f_obj.delete()
+                log_audit_event(admin_profile, 'FACILITY_DELETED', 'HealthFacility', f_id, f"Deleted facility {name}", request)
+                messages.success(request, f"Health facility {name} removed.")
+
+        elif action == 'delete_stakeholder' and user.is_superuser:
+            s_id = request.POST.get('target_id')
+            s_obj = Stakeholder.objects.filter(id=s_id).first()
+            if s_obj:
+                name = s_obj.full_name
+                s_obj.delete()
+                log_audit_event(admin_profile, 'STAKEHOLDER_DELETED', 'Stakeholder', s_id, f"Deleted stakeholder {name}", request)
+                messages.success(request, f"Stakeholder {name} removed from CMS.")
+
+        elif action == 'delete_announcement':
+            a_id = request.POST.get('target_id')
+            a_obj = Announcement.objects.filter(id=a_id).first()
+            if a_obj:
+                a_obj.delete()
+                log_audit_event(admin_profile, 'ANNOUNCEMENT_DELETED', 'Announcement', a_id, "Deleted announcement", request)
+                messages.success(request, "Broadcast announcement deleted.")
+
         return redirect('/dashboard/')
 
     # Query Datasets with Time Filters
@@ -494,10 +560,10 @@ class StakeholderViewSet(viewsets.ModelViewSet):
     serializer_class = StakeholderSerializer
 
 
-class MobileAuthCheckView(APIView):
-    """Mobile Login Authentication & Offline Account Validation View."""
+class MobileLoginView(APIView):
+    """Mobile Login Authentication View (/api/auth/login/)."""
     def post(self, request):
-        identifier = request.data.get('identifier', '')
+        identifier = request.data.get('identifier', '').strip()
         user = UserProfile.objects.filter(phone_number=identifier).first() or UserProfile.objects.filter(email=identifier).first()
         if user:
             if not user.is_approved:
@@ -509,7 +575,45 @@ class MobileAuthCheckView(APIView):
             user.save()
             serializer = UserProfileSerializer(user)
             return Response({'status': 'authenticated', 'user': serializer.data}, status=status.HTTP_200_OK)
-        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+        return Response({'error': f"User account with identifier '{identifier}' not found on cloud server."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class MobileRegisterView(APIView):
+    """Mobile App Registration View (/api/auth/register/)."""
+    def post(self, request):
+        phone = request.data.get('phoneNumber') or request.data.get('phone', '')
+        email = request.data.get('email', '')
+        full_name = request.data.get('fullName') or request.data.get('full_name', '')
+        profession = request.data.get('profession', 'COMMUNITY_HEALTH_WORKER')
+        prof_num = request.data.get('professionalNumber') or request.data.get('professional_number', '')
+        facility_name = request.data.get('facilityName') or request.data.get('facility_name', 'Health Center')
+        county = request.data.get('county', 'Nairobi')
+        pin_hash = request.data.get('pinHash', '')
+
+        if phone and UserProfile.objects.filter(phone_number=phone).exists():
+            return Response({'error': 'An account with this phone number already exists on the server.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        user_prof = UserProfile.objects.create(
+            full_name=full_name,
+            phone_number=phone,
+            email=email or None,
+            profession=profession,
+            role='CHW' if 'CHW' in profession or 'COMMUNITY' in profession else 'CLINICIAN',
+            professional_number=prof_num or None,
+            facility_name=facility_name,
+            county=county,
+            pin_hash=pin_hash,
+            is_approved=True,
+            is_active=True
+        )
+        serializer = UserProfileSerializer(user_prof)
+        return Response({'status': 'registered', 'user': serializer.data}, status=status.HTTP_201_CREATED)
+
+
+class MobileAuthCheckView(APIView):
+    """Mobile Login Authentication View compatibility route."""
+    def post(self, request):
+        return MobileLoginView().post(request)
 
 
 class BatchSyncView(APIView):

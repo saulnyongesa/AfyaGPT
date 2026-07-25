@@ -6,17 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AfyaGPT — HMIS & Stakeholder Management Dashboard</title>
     <link rel="icon" type="image/png" href="{% static 'images/app_logo.png' %}">
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome 6 Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Leaflet JS Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <!-- CKEditor 4 Standard CDN -->
+    <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #F4F6F9; color: #2C3E50; }
         .sidebar { background: linear-gradient(180deg, #0D47A1 0%, #1565C0 100%); color: white; min-height: 100vh; }
         .sidebar-brand { font-weight: 800; font-size: 1.3rem; padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar-menu .nav-link { color: rgba(255,255,255,0.85); padding: 12px 20px; font-weight: 500; border-radius: 8px; margin: 2px 10px; }
         .sidebar-menu .nav-link.active, .sidebar-menu .nav-link:hover { color: #FBC02D; background: rgba(255,255,255,0.12); }
+        .sponsor-card { background: rgba(255,255,255,0.1); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.2); }
         .card-stat { border-radius: 16px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.2s; }
         .card-stat:hover { transform: translateY(-3px); }
         .badge-risk-high { background-color: #FFEBEE; color: #C62828; font-weight: 600; }
@@ -25,6 +32,7 @@
         .badge-visit-facility { background-color: #E3F2FD; color: #1565C0; }
         .badge-visit-home { background-color: #EDE7F6; color: #512DA8; }
         #homeVisitMap { height: 380px; border-radius: 16px; }
+        .img-preview-box { height: 120px; max-width: 200px; object-fit: cover; border-radius: 12px; border: 2px dashed #0D47A1; padding: 2px; }
     </style>
 </head>
 <body>
@@ -36,10 +44,23 @@
                     <img src="{% static 'images/app_logo.png' %}" alt="Logo" style="height:34px; width:34px; border-radius:8px; background:white; padding:2px;">
                     AfyaGPT Portal
                 </div>
-                <div class="p-3 text-white-50 small border-bottom border-secondary">
-                    Logged in as: <strong class="text-white">{{ user.username }}</strong><br>
+                
+                <!-- Remian Diagnostics Sponsor Badge in Sidebar -->
+                <div class="p-3">
+                    <a href="https://remiandiagnostics.com" target="_blank" class="sponsor-card d-flex align-items-center gap-2 text-decoration-none text-white">
+                        <img src="{% static 'images/remian_logo.png' %}" alt="Remian Diagnostics Logo" style="height:36px; width:36px; border-radius:50%; background:white; padding:2px;">
+                        <div class="lh-1">
+                            <span class="text-warning small fw-bold d-block" style="font-size:0.7rem;">SPONSORED BY</span>
+                            <span class="fw-bold" style="font-size:0.82rem;">Remian Diagnostics</span>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="px-3 pb-3 text-white-50 small border-bottom border-secondary">
+                    Logged in: <strong class="text-white">{{ user.username }}</strong><br>
                     Role: <span class="badge bg-warning text-dark">{% if is_superuser %}SUPERADMIN{% else %}STAKEHOLDER{% endif %}</span>
                 </div>
+
                 <ul class="nav flex-column sidebar-menu mt-2">
                     <li class="nav-item"><a class="nav-link active" href="#overview" data-bs-toggle="tab"><i class="fa-solid fa-chart-pie me-2"></i> Overview Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="tab"><i class="fa-solid fa-users-gear me-2"></i> User & Roles</a></li>
@@ -59,13 +80,27 @@
 
             <!-- Main Content Area -->
             <div class="col-md-9 col-lg-10 p-4">
+                
+                <!-- Django Messages Notification Modal Trigger Script -->
                 {% if messages %}
-                {% for message in messages %}
-                <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
-                    <i class="fa-solid fa-circle-check me-2"></i> {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="modal fade" id="djangoMessageModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content rounded-4 border-0 shadow-lg">
+                            <div class="modal-header bg-primary text-white rounded-top-4">
+                                <h5 class="modal-title fw-bold"><i class="fa-solid fa-bell me-2"></i>System Notification</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body p-4 text-center">
+                                {% for message in messages %}
+                                <div class="fs-5 fw-semibold text-dark mb-2">{{ message }}</div>
+                                {% endfor %}
+                            </div>
+                            <div class="modal-footer border-0 justify-content-center">
+                                <button type="button" class="btn btn-primary px-4 rounded-3" data-bs-dismiss="modal">OK</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                {% endfor %}
                 {% endif %}
 
                 <div class="tab-content">
@@ -75,7 +110,7 @@
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div>
                                 <h3 class="fw-bold m-0">Healthcare Operational Dashboard</h3>
-                                <p class="text-muted small m-0">DHIS2 aligned indicators & live triage metrics</p>
+                                <p class="text-muted small m-0">DHIS2 aligned indicators · Sponsored by <a href="https://remiandiagnostics.com" target="_blank" class="fw-bold text-primary text-decoration-none">Remian Diagnostics Limited</a></p>
                             </div>
                             <div class="btn-group" role="group">
                                 <a href="?timeframe=today" class="btn btn-outline-primary btn-sm {% if timeframe == 'today' %}active{% endif %}">Today</a>
@@ -162,7 +197,7 @@
                                             <th>Visit Type</th>
                                             <th>Overall Risk</th>
                                             <th>Engine Source</th>
-                                            <th>Date</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -171,13 +206,17 @@
                                             <td class="fw-semibold">{{ t.patient.full_name }}</td>
                                             <td><code>{{ t.patient.patient_uid }}</code></td>
                                             <td><span class="badge {% if t.visit_type == 'CHW_HOME_VISIT' %}badge-visit-home{% else %}badge-visit-facility{% endif %}">{{ t.get_visit_type_display }}</span></td>
-                                            <td>
-                                                <span class="badge {% if t.overall_risk == 'HIGH' or t.overall_risk == 'CRITICAL' %}badge-risk-high{% elif t.overall_risk == 'MEDIUM' %}badge-risk-medium{% else %}badge-risk-low{% endif %}">
-                                                    {{ t.overall_risk }}
-                                                </span>
-                                            </td>
+                                            <td><span class="badge {% if t.overall_risk == 'HIGH' or t.overall_risk == 'CRITICAL' %}badge-risk-high{% elif t.overall_risk == 'MEDIUM' %}badge-risk-medium{% else %}badge-risk-low{% endif %}">{{ t.overall_risk }}</span></td>
                                             <td><span class="badge bg-light text-dark border">{{ t.suggestion_source }}</span></td>
-                                            <td class="small text-muted">{{ t.created_at|date:"M d, H:i" }}</td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="previewTriage('{{ t.patient.full_name }}', '{{ t.overall_risk }}', '{{ t.danger_signs|default:"None" }}', '{{ t.created_at|date:"Y-m-d H:i" }}')"><i class="fa-solid fa-eye me-1"></i>Preview</button>
+                                                    <a href="/api/export/triage/csv/" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-file-pdf me-1"></i>Report</a>
+                                                    {% if is_superuser %}
+                                                    <button class="btn btn-outline-danger btn-sm" onclick="triggerDelete('delete_triage', '{{ t.id }}', 'Triage Assessment #{{ t.id }}')"><i class="fa-solid fa-trash me-1"></i>Delete</button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
                                         </tr>
                                         {% empty %}
                                         <tr><td colspan="6" class="text-center text-muted py-4">No assessments recorded yet.</td></tr>
@@ -226,24 +265,20 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                {% if is_superuser %}
                                                 <div class="btn-group btn-group-sm">
+                                                    {% if is_superuser %}
                                                     <form method="POST" class="d-inline">
                                                         {% csrf_token %}
                                                         <input type="hidden" name="action" value="approve_user">
                                                         <input type="hidden" name="user_id" value="{{ u.id }}">
                                                         <button type="submit" class="btn btn-outline-success btn-sm">{% if u.is_approved %}Revoke{% else %}Approve{% endif %}</button>
                                                     </form>
-                                                    <form method="POST" class="d-inline ms-1">
-                                                        {% csrf_token %}
-                                                        <input type="hidden" name="action" value="toggle_active_user">
-                                                        <input type="hidden" name="user_id" value="{{ u.id }}">
-                                                        <button type="submit" class="btn btn-outline-secondary btn-sm">{% if u.is_active %}Deactivate{% else %}Reactivate{% endif %}</button>
-                                                    </form>
+                                                    <button class="btn btn-outline-primary btn-sm ms-1" onclick="openResetPinModal('{{ u.id }}', '{{ u.full_name }}')"><i class="fa-solid fa-key me-1"></i>PIN</button>
+                                                    <button class="btn btn-outline-danger btn-sm ms-1" onclick="triggerDelete('delete_user', '{{ u.id }}', 'Staff Account {{ u.full_name }}')"><i class="fa-solid fa-trash me-1"></i>Delete</button>
+                                                    {% else %}
+                                                    <span class="text-muted small">View Only</span>
+                                                    {% endif %}
                                                 </div>
-                                                {% else %}
-                                                <span class="text-muted small">View Only</span>
-                                                {% endif %}
                                             </td>
                                         </tr>
                                         {% endfor %}
@@ -255,44 +290,16 @@
 
                     <!-- MODULE 3: Patient & Clinical Data Oversight -->
                     <div class="tab-pane fade" id="patients">
-                        <h3 class="fw-bold mb-4">Patient & Clinical Data Oversight</h3>
-                        
-                        <!-- High Risk Priority Flag Box -->
-                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-danger bg-opacity-10 border-start border-danger border-4">
-                            <h5 class="fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>High Risk & Flagged Cases Prioritization</h5>
-                            <div class="table-responsive mt-3">
-                                <table class="table table-sm align-middle">
-                                    <thead>
-                                        <tr>
-                                            <th>Patient UID</th>
-                                            <th>Name</th>
-                                            <th>Caregiver</th>
-                                            <th>Phone</th>
-                                            <th>Facility</th>
-                                            <th>Risk Level</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {% for hp in high_risk_patients %}
-                                        <tr>
-                                            <td><code>{{ hp.patient_uid }}</code></td>
-                                            <td class="fw-bold">{{ hp.full_name }}</td>
-                                            <td>{{ hp.caregiver_name|default:"-" }}</td>
-                                            <td>{{ hp.guardian_phone|default:"-" }}</td>
-                                            <td>{{ hp.facility_name }}</td>
-                                            <td><span class="badge badge-risk-high">{{ hp.risk_level }}</span></td>
-                                        </tr>
-                                        {% empty %}
-                                        <tr><td colspan="6" class="text-muted text-center py-2">No high-risk patient flags active.</td></tr>
-                                        {% endfor %}
-                                    </tbody>
-                                </table>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">Patient & Clinical Data Oversight</h3>
+                                <p class="text-muted small m-0">Pediatric registry, risk tracking, and visit timeline</p>
                             </div>
+                            <a href="/api/export/patients/csv/" class="btn btn-outline-primary rounded-3"><i class="fa-solid fa-file-export me-2"></i>Export Patient CSV</a>
                         </div>
 
                         <!-- All Patient Registry Table -->
                         <div class="card border-0 shadow-sm rounded-4 p-4">
-                            <h5 class="fw-bold mb-3">All Registered Patients</h5>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
@@ -300,10 +307,10 @@
                                             <th>UID</th>
                                             <th>Full Name</th>
                                             <th>DOB</th>
-                                            <th>Sex</th>
+                                            <th>Caregiver</th>
                                             <th>Facility</th>
-                                            <th>County</th>
                                             <th>Risk</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -312,10 +319,18 @@
                                             <td><code>{{ p.patient_uid }}</code></td>
                                             <td class="fw-bold">{{ p.full_name }}</td>
                                             <td>{{ p.date_of_birth }}</td>
-                                            <td>{{ p.sex }}</td>
+                                            <td>{{ p.caregiver_name|default:"-" }} ({{ p.guardian_phone|default:"-" }})</td>
                                             <td>{{ p.facility_name }}</td>
-                                            <td>{{ p.county }}</td>
                                             <td><span class="badge {% if p.risk_level == 'HIGH' or p.risk_level == 'CRITICAL' %}badge-risk-high{% elif p.risk_level == 'MEDIUM' %}badge-risk-medium{% else %}badge-risk-low{% endif %}">{{ p.risk_level }}</span></td>
+                                            <td>
+                                                <div class="btn-group btn-group-sm">
+                                                    <button class="btn btn-outline-primary btn-sm" onclick="openEditPatientModal('{{ p.id }}', '{{ p.full_name }}', '{{ p.caregiver_name|default:"" }}', '{{ p.guardian_phone|default:"" }}', '{{ p.facility_name }}', '{{ p.risk_level }}')"><i class="fa-solid fa-pen me-1"></i>Edit</button>
+                                                    <a href="/api/export/patients/csv/" class="btn btn-outline-secondary btn-sm"><i class="fa-solid fa-file-pdf me-1"></i>Report</a>
+                                                    {% if is_superuser %}
+                                                    <button class="btn btn-outline-danger btn-sm" onclick="triggerDelete('delete_patient', '{{ p.id }}', 'Patient Profile {{ p.full_name }}')"><i class="fa-solid fa-trash me-1"></i>Delete</button>
+                                                    {% endif %}
+                                                </div>
+                                            </td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -326,7 +341,16 @@
 
                     <!-- MODULE 4: Facilities & CHW Management -->
                     <div class="tab-pane fade" id="facilities">
-                        <h3 class="fw-bold mb-4">Facility & CHW Geographic Operations</h3>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">Facility & CHW Geographic Operations</h3>
+                                <p class="text-muted small m-0">Registered clinics & live interactive CHW home visit map</p>
+                            </div>
+                            {% if is_superuser %}
+                            <button class="btn btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#createFacilityModal"><i class="fa-solid fa-hospital-user me-2"></i>Add Facility</button>
+                            {% endif %}
+                        </div>
+
                         <div class="row g-4">
                             <div class="col-md-7">
                                 <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
@@ -339,12 +363,17 @@
                                     <h5 class="fw-bold mb-3">Health Facilities Roster</h5>
                                     <ul class="list-group list-group-flush">
                                         {% for f in facilities %}
-                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
                                             <div>
                                                 <strong class="d-block">{{ f.name }}</strong>
                                                 <span class="small text-muted">{{ f.county }} · Code: {{ f.code|default:"-" }}</span>
                                             </div>
-                                            <span class="badge bg-primary rounded-pill">{{ f.staff_members.count }} Staff</span>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="badge bg-primary rounded-pill">{{ f.staff_members.count }} Staff</span>
+                                                {% if is_superuser %}
+                                                <button class="btn btn-outline-danger btn-sm" onclick="triggerDelete('delete_facility', '{{ f.id }}', 'Health Facility {{ f.name }}')"><i class="fa-solid fa-trash"></i></button>
+                                                {% endif %}
+                                            </div>
                                         </li>
                                         {% empty %}
                                         <li class="list-group-item text-muted">No facility records registered yet.</li>
@@ -434,20 +463,73 @@
                     <!-- MODULE 7: CMS Landing Page Editor -->
                     {% if is_superuser %}
                     <div class="tab-pane fade" id="cms">
-                        <h3 class="fw-bold mb-4">CMS Landing Page Editor</h3>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">CMS Landing Page & Stakeholders Editor</h3>
+                                <p class="text-muted small m-0">Live rich-text editing & stakeholder image management</p>
+                            </div>
+                            <button class="btn btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#addStakeholderModal"><i class="fa-solid fa-plus me-2"></i>Add Stakeholder</button>
+                        </div>
+
+                        <!-- Stakeholders List -->
                         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
-                            <h5 class="fw-bold mb-3">Landing Sections Editor</h5>
+                            <h5 class="fw-bold mb-3">Project Stakeholders & Team Members</h5>
+                            <div class="row g-3">
+                                {% for s in stakeholders %}
+                                <div class="col-md-4">
+                                    <div class="card h-100 border rounded-4 p-3 text-center">
+                                        <img src="{{ s.photo_url|default:'https://via.placeholder.com/100' }}" alt="{{ s.full_name }}" class="rounded-circle mx-auto mb-2" style="width:70px; height:70px; object-fit:cover; border:2px solid #0D47A1;">
+                                        <h6 class="fw-bold m-0">{{ s.full_name }}</h6>
+                                        <p class="text-muted small m-0">{{ s.role }}</p>
+                                        <p class="small text-secondary mt-2 mb-3">{{ s.bio|truncatewords:15 }}</p>
+                                        <div class="btn-group btn-group-sm mt-auto">
+                                            <button class="btn btn-outline-primary" onclick="openEditStakeholderModal('{{ s.id }}', '{{ s.full_name }}', '{{ s.role }}', '{{ s.bio }}', '{{ s.photo_url }}')"><i class="fa-solid fa-pen me-1"></i>Edit</button>
+                                            <button class="btn btn-outline-danger" onclick="triggerDelete('delete_stakeholder', '{{ s.id }}', 'Stakeholder {{ s.full_name }}')"><i class="fa-solid fa-trash me-1"></i>Delete</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% empty %}
+                                <div class="col-12 text-muted">No stakeholders uploaded yet.</div>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <!-- Sections Editor with CKEditor -->
+                        <div class="card border-0 shadow-sm rounded-4 p-4">
+                            <h5 class="fw-bold mb-3">Landing Page Content Sections</h5>
                             {% for sec in landing_sections %}
-                            <form method="POST" class="border rounded-3 p-3 mb-3 bg-white">
+                            <form method="POST" class="border rounded-4 p-4 mb-4 bg-white shadow-sm" enctype="multipart/form-data">
                                 {% csrf_token %}
                                 <input type="hidden" name="action" value="update_section">
                                 <input type="hidden" name="section_id" value="{{ sec.id }}">
-                                <div class="row g-2">
-                                    <div class="col-md-3"><label class="form-label small fw-bold">Section</label><input type="text" class="form-control form-control-sm" value="{{ sec.get_section_type_display }}" readonly></div>
-                                    <div class="col-md-4"><label class="form-label small fw-bold">Title</label><input type="text" name="title" class="form-control form-control-sm" value="{{ sec.title }}"></div>
-                                    <div class="col-md-5"><label class="form-label small fw-bold">Subtitle</label><input type="text" name="subtitle" class="form-control form-control-sm" value="{{ sec.subtitle }}"></div>
-                                    <div class="col-12 mt-2"><label class="form-label small fw-bold">Body Content</label><textarea name="body" class="form-control form-control-sm" rows="2">{{ sec.body }}</textarea></div>
-                                    <div class="col-12 text-end mt-2"><button type="submit" class="btn btn-primary btn-sm">Save {{ sec.get_section_type_display }}</button></div>
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold">Section Type</label>
+                                        <input type="text" class="form-control form-control-sm bg-light" value="{{ sec.get_section_type_display }}" readonly>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Section Title</label>
+                                        <input type="text" name="title" class="form-control form-control-sm" value="{{ sec.title }}">
+                                    </div>
+                                    <div class="col-md-5">
+                                        <label class="form-label small fw-bold">Subtitle</label>
+                                        <input type="text" name="subtitle" class="form-control form-control-sm" value="{{ sec.subtitle }}">
+                                    </div>
+                                    <div class="col-md-8">
+                                        <label class="form-label small fw-bold">Body Content (Rich Text)</label>
+                                        <textarea id="editor_{{ sec.id }}" name="body" class="form-control">{{ sec.body }}</textarea>
+                                        <script>CKEDITOR.replace('editor_{{ sec.id }}');</script>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label small fw-bold">Image URL / Preview</label>
+                                        <input type="url" name="image_url" class="form-control form-control-sm mb-2" value="{{ sec.image_url|default:'' }}" placeholder="Cloudinary / Image URL" onchange="document.getElementById('sec_img_{{ sec.id }}').src=this.value;">
+                                        <label class="form-label small text-muted">File Upload Preview</label>
+                                        <input type="file" class="form-control form-control-sm mb-2" accept="image/*" onchange="previewUploadedImage(this, 'sec_img_{{ sec.id }}')">
+                                        <img id="sec_img_{{ sec.id }}" src="{{ sec.image_url|default:'https://via.placeholder.com/200x120' }}" class="img-preview-box mt-1 d-block" alt="Preview">
+                                    </div>
+                                    <div class="col-12 text-end">
+                                        <button type="submit" class="btn btn-primary rounded-3 px-4"><i class="fa-solid fa-floppy-disk me-2"></i>Save {{ sec.get_section_type_display }}</button>
+                                    </div>
                                 </div>
                             </form>
                             {% endfor %}
@@ -457,7 +539,13 @@
 
                     <!-- MODULE 8: Broadcast Alerts -->
                     <div class="tab-pane fade" id="announcements">
-                        <h3 class="fw-bold mb-4">Broadcast Announcements & Directives</h3>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">Broadcast Directives & Alerts</h3>
+                                <p class="text-muted small m-0">Publish clinical advisories directly to mobile health workers</p>
+                            </div>
+                        </div>
+
                         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
                             <h5 class="fw-bold mb-3">Publish New Directive</h5>
                             <form method="POST">
@@ -465,7 +553,7 @@
                                 <input type="hidden" name="action" value="create_announcement">
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold">Title</label>
-                                    <input type="text" name="title" class="form-control" placeholder="e.g. Malaria Surge Season Alert" required>
+                                    <input type="text" name="title" class="form-control" placeholder="e.g. Flood Season Malaria Surge Alert" required>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label small fw-bold">Priority</label>
@@ -475,19 +563,19 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label small fw-bold">Message</label>
+                                    <label class="form-label small fw-bold">Message Directive</label>
                                     <textarea name="message" class="form-control" rows="3" required></textarea>
                                 </div>
-                                <button type="submit" class="btn btn-primary">Broadcast Directive</button>
+                                <button type="submit" class="btn btn-primary rounded-3 px-4"><i class="fa-solid fa-paper-plane me-2"></i>Broadcast Directive</button>
                             </form>
                         </div>
                     </div>
 
                     <!-- MODULE 9: System Health & Settings -->
                     <div class="tab-pane fade" id="settings">
-                        <h3 class="fw-bold mb-4">System Health & Global Settings</h3>
+                        <h3 class="fw-bold mb-4">System Health & Global Parameters</h3>
                         <div class="card border-0 shadow-sm rounded-4 p-4">
-                            <h5 class="fw-bold mb-3">Configuration Parameters</h5>
+                            <h5 class="fw-bold mb-3">Configuration Settings</h5>
                             <table class="table align-middle">
                                 <thead><tr><th>Setting Key</th><th>Value</th><th>Description</th></tr></thead>
                                 <tbody>
@@ -534,15 +622,172 @@
         </div>
     </div>
 
-    <!-- Bootstrap & Leaflet JS -->
+    <!-- UNIVERSAL MODALS -->
+
+    <!-- Universal Delete Confirmation Modal -->
+    <div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-danger text-white rounded-top-4">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-triangle-exclamation me-2"></i>Confirm Deletion</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" id="delete_action_field">
+                    <input type="hidden" name="target_id" id="delete_target_id_field">
+                    <div class="modal-body p-4 text-center">
+                        <p class="fs-5 text-dark m-0" id="delete_message_text">Are you sure you want to delete this record?</p>
+                        <p class="text-danger small mt-2">This action cannot be undone.</p>
+                    </div>
+                    <div class="modal-footer border-0 justify-content-center">
+                        <button type="button" class="btn btn-secondary px-4 rounded-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger px-4 rounded-3"><i class="fa-solid fa-trash me-2"></i>Delete Permanently</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="createUserModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white rounded-top-4">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Create New Staff Member</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_user">
+                    <div class="modal-body p-4">
+                        <div class="mb-3"><label class="form-label small fw-bold">Full Name</label><input type="text" name="full_name" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Phone Number</label><input type="text" name="phone_number" class="form-control" required></div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Role</label>
+                            <select name="profession" class="form-select">
+                                <option value="CLINICIAN">Clinician / Nurse</option>
+                                <option value="FACILITY_ADMIN">Facility Admin</option>
+                                <option value="CHW">Community Health Worker</option>
+                            </select>
+                        </div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Assigned Facility Name</label><input type="text" name="facility_name" class="form-control" value="Nairobi Central Health Center"></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">County</label><input type="text" name="county" class="form-control" value="Nairobi"></div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Patient Modal -->
+    <div class="modal fade" id="editPatientModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white rounded-top-4">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Edit Patient Record</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="edit_patient">
+                    <input type="hidden" name="patient_id" id="edit_patient_id">
+                    <div class="modal-body p-4">
+                        <div class="mb-3"><label class="form-label small fw-bold">Full Name</label><input type="text" name="full_name" id="edit_patient_name" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Caregiver Name</label><input type="text" name="caregiver_name" id="edit_patient_caregiver" class="form-control"></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Guardian Phone</label><input type="text" name="guardian_phone" id="edit_patient_phone" class="form-control"></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Facility Name</label><input type="text" name="facility_name" id="edit_patient_facility" class="form-control"></div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Risk Level</label>
+                            <select name="risk_level" id="edit_patient_risk" class="form-select">
+                                <option value="LOW">LOW</option>
+                                <option value="MEDIUM">MEDIUM</option>
+                                <option value="HIGH">HIGH</option>
+                                <option value="CRITICAL">CRITICAL</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Triage Preview Modal -->
+    <div class="modal fade" id="triagePreviewModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-success text-white rounded-top-4">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-notes-medical me-2"></i>Triage Clinical Preview</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <h5 class="fw-bold" id="preview_p_name">Patient</h5>
+                    <p class="mb-2">Risk Level: <span class="badge bg-danger" id="preview_risk">HIGH</span></p>
+                    <p class="mb-2">Danger Signs: <strong id="preview_danger">None</strong></p>
+                    <p class="small text-muted mb-0">Assessed Date: <span id="preview_date">2026-07-25</span></p>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-primary rounded-3 px-4" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Stakeholder Modal with Image Preview -->
+    <div class="modal fade" id="addStakeholderModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white rounded-top-4">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-user-plus me-2"></i>Add CMS Stakeholder</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="save_stakeholder">
+                    <div class="modal-body p-4">
+                        <div class="mb-3"><label class="form-label small fw-bold">Full Name</label><input type="text" name="full_name" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Role / Title</label><input type="text" name="role" class="form-control" required></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Bio</label><textarea name="bio" class="form-control" rows="2"></textarea></div>
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Photo URL (Cloudinary / Web)</label>
+                            <input type="url" name="photo_url" class="form-control mb-2" onchange="document.getElementById('add_stk_img').src=this.value;">
+                            <label class="form-label small text-muted">File Upload Preview</label>
+                            <input type="file" class="form-control form-control-sm mb-2" accept="image/*" onchange="previewUploadedImage(this, 'add_stk_img')">
+                            <img id="add_stk_img" src="https://via.placeholder.com/100" class="img-preview-box d-block" alt="Preview">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4">Save Stakeholder</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap & Leaflet JS Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Auto trigger Django message modal if messages exist
+            {% if messages %}
+            var msgModal = new bootstrap.Modal(document.getElementById('djangoMessageModal'));
+            msgModal.show();
+            {% endif %}
+
+            // Leaflet Map Initialization
             var map = L.map('homeVisitMap').setView([-1.286389, 36.817223], 7);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 18,
-                attribution: '© OpenStreetMap contributors'
+                maxZoom: 18, attribution: '© OpenStreetMap'
             }).addTo(map);
 
             var markersData = JSON.parse('{{ gps_markers_json|escapejs }}');
@@ -553,6 +798,50 @@
                 }
             });
         });
+
+        // Live Image Upload Preview JS Function
+        function previewUploadedImage(input, previewElementId) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var el = document.getElementById(previewElementId);
+                    if (el) {
+                        el.src = e.target.result;
+                        el.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // Action Trigger Helpers
+        function triggerDelete(actionName, targetId, itemName) {
+            document.getElementById('delete_action_field').value = actionName;
+            document.getElementById('delete_target_id_field').value = targetId;
+            document.getElementById('delete_message_text').innerText = "Are you sure you want to delete " + itemName + "?";
+            var delModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            delModal.show();
+        }
+
+        function openEditPatientModal(id, name, caregiver, phone, facility, risk) {
+            document.getElementById('edit_patient_id').value = id;
+            document.getElementById('edit_patient_name').value = name;
+            document.getElementById('edit_patient_caregiver').value = caregiver;
+            document.getElementById('edit_patient_phone').value = phone;
+            document.getElementById('edit_patient_facility').value = facility;
+            document.getElementById('edit_patient_risk').value = risk;
+            var modal = new bootstrap.Modal(document.getElementById('editPatientModal'));
+            modal.show();
+        }
+
+        function previewTriage(name, risk, danger, date) {
+            document.getElementById('preview_p_name').innerText = name;
+            document.getElementById('preview_risk').innerText = risk;
+            document.getElementById('preview_danger').innerText = danger;
+            document.getElementById('preview_date').innerText = date;
+            var modal = new bootstrap.Modal(document.getElementById('triagePreviewModal'));
+            modal.show();
+        }
     </script>
 </body>
 </html>

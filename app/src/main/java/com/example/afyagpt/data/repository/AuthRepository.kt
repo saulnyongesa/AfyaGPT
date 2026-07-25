@@ -5,6 +5,7 @@ import com.example.afyagpt.data.local.entity.UserEntity
 import com.example.afyagpt.data.preferences.UserPreferences
 import com.example.afyagpt.domain.model.User
 import com.example.afyagpt.domain.model.toEntity
+import com.example.afyagpt.domain.suggestion.ConnectivityChecker
 import com.example.afyagpt.util.AppConstants
 import com.example.afyagpt.util.DateTimeUtils
 import com.example.afyagpt.util.PinHasher
@@ -28,7 +29,8 @@ sealed class AuthResult<out T> {
 class AuthRepository @Inject constructor(
     private val userDao: UserDao,
     private val preferences: UserPreferences,
-    private val syncRepository: SyncRepository
+    private val syncRepository: SyncRepository,
+    private val connectivityChecker: ConnectivityChecker
 ) {
 
     suspend fun registerUser(
@@ -43,6 +45,10 @@ class AuthRepository @Inject constructor(
     ): AuthResult<User> = withContext(Dispatchers.IO) {
         if (userDao.phoneExists(phone)) {
             return@withContext AuthResult.Error("An account with this phone number is already registered locally.")
+        }
+
+        if (!connectivityChecker.isOnline()) {
+            return@withContext AuthResult.Error("No Internet Connection. First-time registration requires an active internet connection. Please check your network and try again.")
         }
 
         return@withContext try {
@@ -74,7 +80,7 @@ class AuthRepository @Inject constructor(
 
             AuthResult.Success(user)
         } catch (e: Exception) {
-            AuthResult.Error("Sign Up requires an active internet connection. Please check your network and try again.")
+            AuthResult.Error("Sign Up requires an active internet connection. Please check your network connection and try again.")
         }
     }
 
@@ -99,11 +105,16 @@ class AuthRepository @Inject constructor(
 
                 return@withContext AuthResult.Success(user)
             } else {
-                return@withContext AuthResult.Error("Incorrect PIN. Please try again.")
+                return@withContext AuthResult.Error("Incorrect PIN for local account. Please try again.")
             }
         }
 
-        // 2. Online Check: Account not found locally, query Heroku Backend
+        // 2. Network Check: If user is not saved on this device, active internet is mandatory
+        if (!connectivityChecker.isOnline()) {
+            return@withContext AuthResult.Error("No Internet Connection. Account not found locally on this device. Initial cloud login requires an active internet connection.")
+        }
+
+        // 3. Online Check: Query Django REST Backend (/api/auth/login/)
         return@withContext try {
             val backendResult = loginUserFromBackend(trimmed, pin)
             if (backendResult is AuthResult.Success) {
@@ -123,7 +134,7 @@ class AuthRepository @Inject constructor(
                 backendResult
             }
         } catch (e: Exception) {
-            AuthResult.Error("Account not found locally or online. If you are a new user, please click 'Sign Up Now' below. (Note: Internet connection is required for first-time login).")
+            AuthResult.Error("Account for '$trimmed' not found locally or online. If you are a new user, please click 'Sign Up' below to create your account.")
         }
     }
 
@@ -158,8 +169,8 @@ class AuthRepository @Inject constructor(
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "application/json; charset=UTF-8")
                 doOutput = true
-                connectTimeout = 6000
-                readTimeout = 6000
+                connectTimeout = 8000
+                readTimeout = 8000
             }
             OutputStreamWriter(connection.outputStream, "UTF-8").use { it.write(payload.toString()) }
             if (connection.responseCode in 200..299) {
@@ -188,17 +199,20 @@ class AuthRepository @Inject constructor(
                 requestMethod = "POST"
                 setRequestProperty("Content-Type", "application/json; charset=UTF-8")
                 doOutput = true
-                connectTimeout = 6000
-                readTimeout = 6000
+                connectTimeout = 8000
+                readTimeout = 8000
             }
             OutputStreamWriter(connection.outputStream, "UTF-8").use { it.write(payload.toString()) }
             val code = connection.responseCode
             if (code == 403) {
-                return AuthResult.Error("Account pending admin/supervisor approval. Please contact your facility admin.")
+                val responseText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                val json = if (responseText.isNotBlank()) JSONObject(responseText) else JSONObject()
+                val msg = json.optString("error", "Account pending admin/supervisor approval. Please contact your facility admin.")
+                return AuthResult.Error(msg)
             } else if (code in 200..299) {
                 val responseText = connection.inputStream.bufferedReader().use { it.readText() }
                 val json = JSONObject(responseText)
-                val ujson = json.optJSONObject("user") ?: return AuthResult.Error("Invalid response from server.")
+                val ujson = json.optJSONObject("user") ?: return AuthResult.Error("Invalid response format from server.")
                 val user = User(
                     id = 0,
                     fullName = ujson.optString("full_name", "Health Worker"),
@@ -212,7 +226,7 @@ class AuthRepository @Inject constructor(
                     ward = ujson.optString("ward"),
                     malariaRiskZone = ujson.optString("malaria_risk_zone", "HIGH"),
                     pinHash = PinHasher.hashPin(pin),
-                    profilePhotoUri = null,
+                    profilePhotoUri = ujson.optString("profile_photo_url").takeIf { it.isNotBlank() },
                     themePreference = "BLUE_YELLOW",
                     isActive = true,
                     createdAt = DateTimeUtils.now(),
@@ -220,10 +234,14 @@ class AuthRepository @Inject constructor(
                 )
                 AuthResult.Success(user)
             } else {
-                AuthResult.Error("Account not found locally or online. If you are a new user, please click 'Sign Up Now' below. (Note: Internet connection is required for initial login).")
+                val errText = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: ""
+                val errJson = if (errText.isNotBlank()) JSONObject(errText) else JSONObject()
+                val msg = errJson.optString("error")
+                    .ifBlank { "Account for '$identifier' not found on cloud server. If you are a new user, please click 'Sign Up' below." }
+                AuthResult.Error(msg)
             }
         } catch (e: Exception) {
-            AuthResult.Error("Account not found locally or online. If you are a new user, please click 'Sign Up Now' below. (Note: Internet connection is required for initial login).")
+            AuthResult.Error("Could not connect to cloud server. Please verify your internet connection and backend server URL.")
         }
     }
 }

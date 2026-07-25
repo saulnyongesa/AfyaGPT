@@ -25,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -90,14 +91,24 @@ fun SignUpScreen(
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary
             )
-            
             Text(
-                text = "Fill in your details to start serving your community.",
+                text = "Health Intelligence for Every Community",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val isOnline = remember { com.example.afyagpt.domain.suggestion.ConnectivityChecker(context).isOnline() }
+
+            if (!isOnline) {
+                AfyaAlertBanner(
+                    title = "No Internet Connection",
+                    message = "You are currently offline. Initial user registration requires an active internet connection.",
+                    type = BannerType.WARNING,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+            }
 
     // Small error dialog shown when registration fails
     if (state.error != null) {

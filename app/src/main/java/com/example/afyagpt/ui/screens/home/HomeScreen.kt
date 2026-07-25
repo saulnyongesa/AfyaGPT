@@ -125,6 +125,7 @@ fun HomeScreen(
                 AfyaHomeTopBar(
                     userName = state.user?.fullName ?: "",
                     userRole = state.user?.profession ?: "",
+                    profilePhotoUri = state.user?.profilePhotoUri,
                     onProfileClick = { onNavigate(AppRoute.Profile.route) },
                     onSearchClick = { onNavigate(AppRoute.Search.route) }
                 )

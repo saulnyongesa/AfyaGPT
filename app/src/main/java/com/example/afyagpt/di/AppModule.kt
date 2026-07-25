@@ -41,9 +41,10 @@ object AppModule {
     fun provideAuthRepository(
         userDao: UserDao,
         preferences: UserPreferences,
-        syncRepository: SyncRepository
+        syncRepository: SyncRepository,
+        connectivityChecker: com.example.afyagpt.domain.suggestion.ConnectivityChecker
     ): AuthRepository {
-        return AuthRepository(userDao, preferences, syncRepository)
+        return AuthRepository(userDao, preferences, syncRepository, connectivityChecker)
     }
 
     /**
