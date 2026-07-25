@@ -118,3 +118,30 @@ class ContactInquiry(models.Model):
 
     def __str__(self):
         return f"Inquiry from {self.name} - {self.subject}"
+
+
+class Announcement(models.Model):
+    """Ministry of Health & Facility Announcements broadcast to mobile CHWs."""
+    title = models.CharField(max_length=255)
+    message = models.TextField()
+    priority = models.CharField(max_length=20, choices=[('INFO', 'INFO'), ('URGENT', 'URGENT')], default='INFO')
+    target_county = models.CharField(max_length=100, default='ALL')
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"[{self.priority}] {self.title}"
+
+
+class AppSetting(models.Model):
+    """Global system settings managed by assigned Stakeholder groups."""
+    key = models.CharField(max_length=100, unique=True)
+    value = models.TextField()
+    description = models.CharField(max_length=255, blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.key} = {self.value}"

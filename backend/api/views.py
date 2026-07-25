@@ -1,19 +1,21 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import (
     UserProfile, Patient, TriageSession, Vaccination, ChatMessage,
-    NewsArticle, ContactInquiry
+    NewsArticle, ContactInquiry, Announcement, AppSetting
 )
 from .serializers import (
     UserProfileSerializer, PatientSerializer,
     TriageSessionSerializer, VaccinationSerializer, ChatMessageSerializer,
-    NewsArticleSerializer, ContactInquirySerializer
+    NewsArticleSerializer, ContactInquirySerializer,
+    AnnouncementSerializer, AppSettingSerializer
 )
 
-# Landing Page View
 def landing_page(request):
     """Renders the official AfyaGPT landing page with dynamic stats, news, and contact form."""
     if request.method == 'POST':
@@ -40,32 +42,6 @@ def landing_page(request):
     }
 
     news_articles = NewsArticle.objects.all()[:3]
-    if not news_articles:
-        # Initial sample news articles if DB is empty
-        news_articles = [
-            {
-                'title': 'AfyaGPT Deploys AI Triage Across 50 Rural Clinics in Kenya',
-                'summary': 'Empowering frontline Community Health Workers with offline-first WHO IMCI pediatric decision support.',
-                'category': 'Impact Update',
-                'published_at': '2026-07-20',
-                'author': 'AfyaGPT Editorial'
-            },
-            {
-                'title': 'Kenya EPI Immunization Tracking Achieves 98% Follow-up Rate',
-                'summary': 'Automated 14-dose schedule tracking helps CHWs eliminate missed vaccine doses in sub-counties.',
-                'category': 'Immunization',
-                'published_at': '2026-07-15',
-                'author': 'Dr. Saul Nyongesa'
-            },
-            {
-                'title': 'Zero-Latency Offline AI Models Empower Low-Connectivity Health Centers',
-                'summary': 'How local SQLite storage and on-device logic deliver zero-downtime medical support.',
-                'category': 'Technology',
-                'published_at': '2026-07-02',
-                'author': 'Engineering Team'
-            }
-        ]
-
     team_members = [
         {
             'name': 'Saul Nyongesa',
@@ -87,12 +63,82 @@ def landing_page(request):
         }
     ]
 
-    context = {
+    return render(request, 'index.html', {
         'stats': stats,
         'news_articles': news_articles,
         'team_members': team_members
+    })
+
+
+def stakeholder_login(request):
+    """Authentication view for Admins and Stakeholders."""
+    if request.user.is_authenticated:
+        return redirect('/dashboard/')
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        password = request.POST.get('password', '').strip()
+        user = authenticate(request, username=username, password=password)
+
+        if user is not None:
+            login(request, user)
+            messages.success(request, f"Welcome back, {user.username}!")
+            return redirect('/dashboard/')
+        else:
+            messages.error(request, "Invalid username or password. Please try again.")
+
+    return render(request, 'login.html')
+
+
+def stakeholder_logout(request):
+    """Logout view for Stakeholder portal."""
+    logout(request)
+    messages.info(request, "You have been logged out successfully.")
+    return redirect('/login/')
+
+
+@login_required(login_url='/login/')
+def stakeholder_dashboard(request):
+    """Stakeholder Web Dashboard with Django Group-based Role Control."""
+    user = request.user
+    user_groups = list(user.groups.values_list('name', flat=True))
+
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        if action == 'create_user':
+            fullName = request.POST.get('full_name')
+            phone = request.POST.get('phone_number')
+            profession = request.POST.get('profession')
+            facility = request.POST.get('facility_name')
+            county = request.POST.get('county')
+            if fullName and phone:
+                UserProfile.objects.create(
+                    full_name=fullName, phone_number=phone, profession=profession or 'CHW',
+                    facility_name=facility or 'Health Center', county=county or 'Nairobi', pin_hash='123456'
+                )
+                messages.success(request, f"Health Worker {fullName} registered successfully.")
+        elif action == 'create_announcement':
+            title = request.POST.get('title')
+            message = request.POST.get('message')
+            priority = request.POST.get('priority', 'INFO')
+            if title and message:
+                Announcement.objects.create(title=title, message=message, priority=priority)
+                messages.success(request, "Announcement published to mobile CHWs.")
+
+        return redirect('/dashboard/')
+
+    context = {
+        'user_groups': user_groups,
+        'patients': Patient.objects.all().order_by('-created_at')[:20],
+        'triages': TriageSession.objects.all().order_by('-created_at')[:20],
+        'users': UserProfile.objects.all().order_by('-created_at')[:20],
+        'announcements': Announcement.objects.filter(is_active=True)[:10],
+        'settings': AppSetting.objects.all(),
+        'total_patients': Patient.objects.count(),
+        'total_triage': TriageSession.objects.count(),
+        'total_users': UserProfile.objects.count()
     }
-    return render(request, 'index.html', context)
+    return render(request, 'dashboard.html', context)
 
 
 # REST ViewSets
@@ -123,6 +169,14 @@ class NewsArticleViewSet(viewsets.ModelViewSet):
 class ContactInquiryViewSet(viewsets.ModelViewSet):
     queryset = ContactInquiry.objects.all()
     serializer_class = ContactInquirySerializer
+
+class AnnouncementViewSet(viewsets.ModelViewSet):
+    queryset = Announcement.objects.filter(is_active=True).order_by('-created_at')
+    serializer_class = AnnouncementSerializer
+
+class AppSettingViewSet(viewsets.ModelViewSet):
+    queryset = AppSetting.objects.all()
+    serializer_class = AppSettingSerializer
 
 
 # API Authentication & Sync Views

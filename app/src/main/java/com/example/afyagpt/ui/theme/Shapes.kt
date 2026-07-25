@@ -4,25 +4,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Shapes
 import androidx.compose.ui.unit.dp
 
-/*
- * Shapes.kt — AfyaGPT Shape System
- *
- * Defines the corner radii for all UI components.
- * AfyaGPT favors rounded, friendly shapes for a modern medical feel.
+/**
+ * Shapes.kt — AfyaGPT Professional Design System Corner Radii.
+ * Uses clean, modern, crisp medical radii (8dp to 16dp) rather than over-rounded pill shapes.
  */
 
 val AfyaGPTShapes = Shapes(
-    // Extra Small: Used for badges, chips, small tooltips
     extraSmall = RoundedCornerShape(4.dp),
-    // Small: Used for text fields, dropdowns, small buttons
-    small = RoundedCornerShape(8.dp),
-    // Medium: Used for primary buttons, small cards
-    medium = RoundedCornerShape(12.dp),
-    // Large: Used for main content cards, dialogs
-    large = RoundedCornerShape(24.dp),
-    // Extra Large: Used for bottom sheets, large overlapping surfaces
-    extraLarge = RoundedCornerShape(32.dp)
+    small = RoundedCornerShape(6.dp),
+    medium = RoundedCornerShape(10.dp),
+    large = RoundedCornerShape(12.dp),
+    extraLarge = RoundedCornerShape(16.dp)
 )
 
-// PillShape: Used for risk badges, pill buttons, floating action buttons
-val PillShape = RoundedCornerShape(50.dp)
+val PillShape = RoundedCornerShape(8.dp)

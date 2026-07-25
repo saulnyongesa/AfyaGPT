@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     UserProfile, Patient, TriageSession, Vaccination, ChatMessage,
-    NewsArticle, ContactInquiry
+    NewsArticle, ContactInquiry, Announcement, AppSetting
 )
 
 @admin.register(UserProfile)
@@ -43,3 +43,14 @@ class ContactInquiryAdmin(admin.ModelAdmin):
     list_display = ('name', 'email', 'phone', 'subject', 'created_at', 'is_resolved')
     list_filter = ('is_resolved', 'created_at')
     search_fields = ('name', 'email', 'subject', 'message')
+
+@admin.register(Announcement)
+class AnnouncementAdmin(admin.ModelAdmin):
+    list_display = ('title', 'priority', 'target_county', 'created_at', 'is_active')
+    list_filter = ('priority', 'is_active', 'target_county')
+    search_fields = ('title', 'message')
+
+@admin.register(AppSetting)
+class AppSettingAdmin(admin.ModelAdmin):
+    list_display = ('key', 'value', 'description', 'updated_at')
+    search_fields = ('key', 'description')

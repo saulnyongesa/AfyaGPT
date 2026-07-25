@@ -1,5 +1,8 @@
 from rest_framework import serializers
-from .models import UserProfile, Patient, TriageSession, Vaccination, ChatMessage, NewsArticle, ContactInquiry
+from .models import (
+    UserProfile, Patient, TriageSession, Vaccination, ChatMessage,
+    NewsArticle, ContactInquiry, Announcement, AppSetting
+)
 
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
@@ -34,4 +37,14 @@ class NewsArticleSerializer(serializers.ModelSerializer):
 class ContactInquirySerializer(serializers.ModelSerializer):
     class Meta:
         model = ContactInquiry
+        fields = '__all__'
+
+class AnnouncementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Announcement
+        fields = '__all__'
+
+class AppSettingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AppSetting
         fields = '__all__'

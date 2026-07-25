@@ -308,6 +308,27 @@ fun HomeScreen(
                         )
                     }
                 }
+
+                // Facility & Health Ministry Announcements Section (At the very bottom of Home Screen)
+                item {
+                    AfyaSectionCard(title = "Ministry & Facility Directives") {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            AfyaAlertBanner(
+                                title = "Malaria Outbreak Alert (High Priority)",
+                                message = "High incidence reported in endemic sub-counties. Perform blood RDT for all pediatric fever presentations.",
+                                type = BannerType.DANGER
+                            )
+                            AfyaAlertBanner(
+                                title = "KEPI Vaccine Supply Update",
+                                message = "Rotavirus vaccine batch #9420 and BCG stock re-supplied at Sub-County Central Depot.",
+                                type = BannerType.INFO
+                            )
+                        }
+                    }
+                }
             }
         }
     }

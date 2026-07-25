@@ -58,7 +58,7 @@ fun AfyaSearchBar(
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
         keyboardActions = KeyboardActions(onSearch = { /* Handle keyboard search if needed */ }),
         singleLine = true,
-        shape = RoundedCornerShape(50.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
             focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,

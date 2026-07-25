@@ -1,0 +1,310 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AfyaGPT — Stakeholder Management Dashboard</title>
+    <link rel="icon" type="image/png" href="{% static 'images/app_logo.png' %}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F4F6F9; }
+        .sidebar { background: #0D47A1; color: white; min-height: 100vh; }
+        .sidebar-brand { font-weight: 800; font-size: 1.3rem; padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .sidebar-menu .nav-link { color: rgba(255,255,255,0.8); padding: 12px 20px; font-weight: 500; }
+        .sidebar-menu .nav-link.active, .sidebar-menu .nav-link:hover { color: #FBC02D; background: rgba(255,255,255,0.05); }
+        .card-stat { border-radius: 16px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-0">
+                <div class="sidebar-brand d-flex align-items-center gap-2">
+                    <img src="{% static 'images/app_logo.png' %}" alt="Logo" style="height:32px; width:32px; border-radius:6px; background:white; padding:2px;">
+                    AfyaGPT Portal
+                </div>
+                <div class="p-3 text-white-50 small border-bottom border-secondary">
+                    Logged in as: <strong class="text-white">{{ user.username }}</strong><br>
+                    Role Groups: <span class="badge bg-warning text-dark">{% for g in user_groups %}{{ g }} {% empty %}Super Admin{% endfor %}</span>
+                </div>
+                <ul class="nav flex-column sidebar-menu mt-2">
+                    <li class="nav-item"><a class="nav-link active" href="#overview" data-bs-toggle="tab"><i class="fa-solid fa-chart-line me-2"></i> Overview</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="tab"><i class="fa-solid fa-user-nurse me-2"></i> Health Workers</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#patients" data-bs-toggle="tab"><i class="fa-solid fa-children me-2"></i> Synced Patients</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#announcements" data-bs-toggle="tab"><i class="fa-solid fa-bullhorn me-2"></i> Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#settings" data-bs-toggle="tab"><i class="fa-solid fa-sliders me-2"></i> System Settings</a></li>
+                    <li class="nav-item mt-4"><a class="nav-link text-danger" href="/admin/"><i class="fa-solid fa-user-shield me-2"></i> Django Admin</a></li>
+                </ul>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 p-4">
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-sm mb-4" role="alert">
+                    <i class="fa-solid fa-circle-check me-2"></i> {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+                {% endif %}
+
+                <div class="tab-content">
+                    <!-- Overview Tab -->
+                    <div class="tab-pane fade show active" id="overview">
+                        <h3 class="fw-bold mb-4">Stakeholder Dashboard Overview</h3>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="card card-stat p-3 bg-white border-start border-primary border-4">
+                                    <div class="text-muted small">Registered Health Workers</div>
+                                    <div class="fs-2 fw-bold text-primary">{{ total_users }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-stat p-3 bg-white border-start border-warning border-4">
+                                    <div class="text-muted small">Synced Patient Profiles</div>
+                                    <div class="fs-2 fw-bold text-warning">{{ total_patients }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card card-stat p-3 bg-white border-start border-success border-4">
+                                    <div class="text-muted small">IMCI Triage Sessions</div>
+                                    <div class="fs-2 fw-bold text-success">{{ total_triage }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                            <h5 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Recent Synced Triage Assessments</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Patient Name</th>
+                                            <th>UID</th>
+                                            <th>Overall Risk</th>
+                                            <th>Cough / Resp</th>
+                                            <th>Fever / Malaria</th>
+                                            <th>Date Synced</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for t in triages %}
+                                        <tr>
+                                            <td class="fw-semibold">{{ t.patient.full_name }}</td>
+                                            <td><code>{{ t.patient.patient_uid }}</code></td>
+                                            <td>
+                                                <span class="badge {% if t.overall_risk == 'CRITICAL' %}bg-danger{% elif t.overall_risk == 'HIGH' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                                    {{ t.overall_risk }}
+                                                </span>
+                                            </td>
+                                            <td>{{ t.cough_classification|default:"Normal" }}</td>
+                                            <td>{{ t.fever_classification|default:"Negative" }}</td>
+                                            <td class="small text-muted">{{ t.created_at }}</td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="6" class="text-center text-muted">No triage sessions synced yet.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Health Workers Tab -->
+                    <div class="tab-pane fade" id="users">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <h3 class="fw-bold mb-0">Health Worker Account Manager</h3>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-5">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-plus me-2 text-primary"></i>Register New Health Worker</h5>
+                                    <form method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="create_user">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Full Name *</label>
+                                            <input type="text" name="full_name" class="form-control" placeholder="Nurse Jane Wambui" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Phone Number *</label>
+                                            <input type="tel" name="phone_number" class="form-control" placeholder="0712345678" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Profession</label>
+                                            <select name="profession" class="form-select">
+                                                <option value="COMMUNITY_HEALTH_WORKER">Community Health Worker (CHW)</option>
+                                                <option value="NURSE">Nurse</option>
+                                                <option value="CLINICAL_OFFICER">Clinical Officer</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Facility Name</label>
+                                            <input type="text" name="facility_name" class="form-control" placeholder="Kibera Sub-County Clinic">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">County</label>
+                                            <input type="text" name="county" class="form-control" placeholder="Nairobi">
+                                        </div>
+                                        <button type="submit" class="btn btn-primary w-100 py-2"><i class="fa-solid fa-check me-2"></i>Create Account</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <h5 class="fw-bold mb-3">Registered Clinicians & CHWs</h5>
+                                    <div class="table-responsive">
+                                        <table class="table table-hover align-middle">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Name</th>
+                                                    <th>Phone</th>
+                                                    <th>Profession</th>
+                                                    <th>Facility</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for u in users %}
+                                                <tr>
+                                                    <td class="fw-semibold">{{ u.full_name }}</td>
+                                                    <td>{{ u.phone_number }}</td>
+                                                    <td><span class="badge bg-info text-dark">{{ u.profession }}</span></td>
+                                                    <td class="small">{{ u.facility_name }}</td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patients Tab -->
+                    <div class="tab-pane fade" id="patients">
+                        <h3 class="fw-bold mb-4">Synced Pediatric Patients</h3>
+                        <div class="card border-0 shadow-sm rounded-4 p-4">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Patient UID</th>
+                                            <th>Full Name</th>
+                                            <th>DOB</th>
+                                            <th>Sex</th>
+                                            <th>Caregiver</th>
+                                            <th>Facility</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for p in patients %}
+                                        <tr>
+                                            <td><code>{{ p.patient_uid }}</code></td>
+                                            <td class="fw-semibold">{{ p.full_name }}</td>
+                                            <td>{{ p.date_of_birth }}</td>
+                                            <td>{{ p.sex }}</td>
+                                            <td>{{ p.caregiver_name|default:"N/A" }}</td>
+                                            <td>{{ p.facility_name }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Announcements Tab -->
+                    <div class="tab-pane fade" id="announcements">
+                        <h3 class="fw-bold mb-4">Facility Announcements Broadcast</h3>
+                        <div class="row g-4">
+                            <div class="col-md-5">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-paper-plane me-2 text-primary"></i>Publish Mobile Announcement</h5>
+                                    <form method="POST">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action" value="create_announcement">
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Title *</label>
+                                            <input type="text" name="title" class="form-control" placeholder="Malaria Outbreak Alert - Westlands" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Priority</label>
+                                            <select name="priority" class="form-select">
+                                                <option value="INFO">INFO (General Directive)</option>
+                                                <option value="URGENT">URGENT (Critical Outbreak)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">Message *</label>
+                                            <textarea name="message" rows="4" class="form-control" placeholder="All CHWs ensure extra screening for children presenting with high fever..." required></textarea>
+                                        </div>
+                                        <button type="submit" class="btn btn-warning fw-bold w-100 py-2"><i class="fa-solid fa-bullhorn me-2"></i>Publish Broadcast</button>
+                                    </form>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <h5 class="fw-bold mb-3">Active Mobile Broadcasts</h5>
+                                    <div class="list-group list-group-flush">
+                                        {% for a in announcements %}
+                                        <div class="list-group-item px-0 py-3">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <h6 class="fw-bold mb-0">{{ a.title }}</h6>
+                                                <span class="badge {% if a.priority == 'URGENT' %}bg-danger{% else %}bg-primary{% endif %}">{{ a.priority }}</span>
+                                            </div>
+                                            <p class="small text-muted mb-1">{{ a.message }}</p>
+                                            <span class="small text-secondary"><i class="fa-regular fa-clock me-1"></i>{{ a.created_at }}</span>
+                                        </div>
+                                        {% empty %}
+                                        <div class="text-muted">No announcements published yet.</div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings Tab -->
+                    <div class="tab-pane fade" id="settings">
+                        <h3 class="fw-bold mb-4">System Settings Control</h3>
+                        <div class="card border-0 shadow-sm rounded-4 p-4">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Setting Key</th>
+                                        <th>Value</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>MALARIA_ALERT_MODE</code></td>
+                                        <td><span class="badge bg-success">ACTIVE_HIGH</span></td>
+                                        <td>Forces CHWs in malaria endemic zones to perform blood RDT triage.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>IMCI_GUIDELINE_VERSION</code></td>
+                                        <td><span class="badge bg-secondary">2026_WHO_MOH_V3</span></td>
+                                        <td>Current active WHO IMCI clinical decision guidelines.</td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>BACKGROUND_SYNC_MINS</code></td>
+                                        <td><span class="badge bg-info text-dark">15 MINS</span></td>
+                                        <td>Interval for WorkManager automatic periodic data sync.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

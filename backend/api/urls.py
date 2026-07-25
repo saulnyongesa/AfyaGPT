@@ -4,6 +4,7 @@ from .views import (
     UserProfileViewSet, PatientViewSet,
     TriageSessionViewSet, VaccinationViewSet, ChatMessageViewSet,
     NewsArticleViewSet, ContactInquiryViewSet,
+    AnnouncementViewSet, AppSettingViewSet,
     AuthRegisterView, AuthLoginView, BatchSyncView
 )
 
@@ -15,6 +16,8 @@ router.register(r'vaccinations', VaccinationViewSet)
 router.register(r'chat', ChatMessageViewSet)
 router.register(r'news', NewsArticleViewSet)
 router.register(r'contact-inquiries', ContactInquiryViewSet)
+router.register(r'announcements', AnnouncementViewSet)
+router.register(r'settings', AppSettingViewSet)
 
 urlpatterns = [
     path('auth/register/', AuthRegisterView.as_view(), name='auth_register'),

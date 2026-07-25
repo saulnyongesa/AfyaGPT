@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
-from api.views import landing_page
+from api.views import landing_page, stakeholder_dashboard, stakeholder_login, stakeholder_logout
 
 def health_check(request):
     """Heroku deployment health check endpoint returning plain text 'ok'."""
@@ -9,12 +9,14 @@ def health_check(request):
 
 urlpatterns = [
     path('', landing_page, name='landing_page'),
+    path('login/', stakeholder_login, name='login'),
+    path('logout/', stakeholder_logout, name='logout'),
+    path('dashboard/', stakeholder_dashboard, name='stakeholder_dashboard'),
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health_check'),
     path('api/', include('api.urls')),
 ]
 
-# Customize Super Admin Dashboard Headers
 admin.site.site_header = "AfyaGPT Super Admin Dashboard"
 admin.site.site_title = "AfyaGPT Health Intelligence Portal"
 admin.site.index_title = "Community Health Systems & Triage Control Center"
