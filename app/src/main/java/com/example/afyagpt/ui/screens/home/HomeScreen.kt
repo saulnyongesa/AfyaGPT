@@ -316,16 +316,27 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            AfyaAlertBanner(
-                                title = "Malaria Outbreak Alert (High Priority)",
-                                message = "High incidence reported in endemic sub-counties. Perform blood RDT for all pediatric fever presentations.",
-                                type = BannerType.DANGER
-                            )
-                            AfyaAlertBanner(
-                                title = "KEPI Vaccine Supply Update",
-                                message = "Rotavirus vaccine batch #9420 and BCG stock re-supplied at Sub-County Central Depot.",
-                                type = BannerType.INFO
-                            )
+                            if (state.announcements.isNotEmpty()) {
+                                state.announcements.forEach { ann ->
+                                    val bType = if (ann.priority == "URGENT") BannerType.DANGER else BannerType.INFO
+                                    AfyaAlertBanner(
+                                        title = ann.title,
+                                        message = ann.message,
+                                        type = bType
+                                    )
+                                }
+                            } else {
+                                AfyaAlertBanner(
+                                    title = "Malaria Outbreak Alert (High Priority)",
+                                    message = "High incidence reported in endemic sub-counties. Perform blood RDT for all pediatric fever presentations.",
+                                    type = BannerType.DANGER
+                                )
+                                AfyaAlertBanner(
+                                    title = "KEPI Vaccine Supply Update",
+                                    message = "Rotavirus vaccine batch #9420 and BCG stock re-supplied at Sub-County Central Depot.",
+                                    type = BannerType.INFO
+                                )
+                            }
                         }
                     }
                 }

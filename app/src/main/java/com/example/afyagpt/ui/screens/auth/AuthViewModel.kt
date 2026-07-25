@@ -52,6 +52,7 @@ data class LoginUiState(
     val pin: String = "",
     val showPin: Boolean = false,
     val isLoading: Boolean = false,
+    val statusMessage: String? = null,
     val error: String? = null,
     val isSuccess: Boolean = false,
     val failedAttempts: Int = 0,
@@ -209,7 +210,7 @@ class AuthViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            _loginState.update { it.copy(isLoading = true, error = null) }
+            _loginState.update { it.copy(isLoading = true, statusMessage = "Checking account credentials locally & online...", error = null) }
             
             // Format phone if it looks like a Kenyan number, otherwise use as is (might be email)
             val identifier = if (state.identifier.startsWith("07") || state.identifier.startsWith("01")) {
@@ -222,7 +223,7 @@ class AuthViewModel @Inject constructor(
             
             when (result) {
                 is AuthResult.Success -> {
-                    _loginState.update { it.copy(isLoading = false, isSuccess = true, failedAttempts = 0) }
+                    _loginState.update { it.copy(isLoading = false, statusMessage = null, isSuccess = true, failedAttempts = 0) }
                 }
                 is AuthResult.Error -> {
                     val attempts = state.failedAttempts + 1
@@ -232,7 +233,8 @@ class AuthViewModel @Inject constructor(
                         _loginState.update { 
                             it.copy(
                                 isLoading = false, 
-                                error = "Invalid credentials. ${5 - attempts} attempts remaining.",
+                                statusMessage = null,
+                                error = result.message,
                                 failedAttempts = attempts
                             ) 
                         }

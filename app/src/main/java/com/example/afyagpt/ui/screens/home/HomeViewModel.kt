@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.afyagpt.data.local.entity.PatientEntity
 import com.example.afyagpt.data.preferences.UserPreferences
+import com.example.afyagpt.data.repository.AnnouncementRepository
 import com.example.afyagpt.data.repository.AuthRepository
 import com.example.afyagpt.data.repository.PatientRepository
+import com.example.afyagpt.data.repository.RemoteAnnouncement
 import com.example.afyagpt.data.repository.SyncRepository
 import com.example.afyagpt.domain.model.User
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,6 +28,7 @@ data class HomeUiState(
     val totalPatientsToday: Int = 0,
     val pendingFollowUps: Int = 0,
     val recentPatients: List<PatientEntity> = emptyList(),
+    val announcements: List<RemoteAnnouncement> = emptyList(),
     val isLoggedOut: Boolean = false,
     val syncMessage: String? = null
 )
@@ -35,6 +38,7 @@ class HomeViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val patientRepository: PatientRepository,
     private val syncRepository: SyncRepository,
+    private val announcementRepository: AnnouncementRepository,
     private val userPreferences: UserPreferences
 ) : ViewModel() {
 
@@ -43,6 +47,7 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadDashboardData()
+        fetchRemoteAnnouncements()
 
         viewModelScope.launch {
             userPreferences.getSyncStatus().collect { (_, unsyncedCount) ->
@@ -75,11 +80,22 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    /** Fetches live Ministry & Facility Directives from Heroku server when internet is available. */
+    fun fetchRemoteAnnouncements() {
+        viewModelScope.launch {
+            val list = announcementRepository.fetchAnnouncements()
+            if (list.isNotEmpty()) {
+                _uiState.update { it.copy(announcements = list) }
+            }
+        }
+    }
+
     /** Triggers a manual sync of all local patient data to Heroku backend. */
     fun syncNow() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val result = syncRepository.syncOfflineData()
+            fetchRemoteAnnouncements()
             if (result.isSuccess) {
                 val count = result.getOrDefault(0)
                 _uiState.update {
