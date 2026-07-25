@@ -57,6 +57,7 @@ fun SplashScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .systemBarsPadding()
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(BlueYellowPrimary, BlueYellowPrimaryVariant)

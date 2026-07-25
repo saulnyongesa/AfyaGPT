@@ -13,14 +13,15 @@ class UserProfile(models.Model):
     ward = models.CharField(max_length=100, blank=True, null=True)
     malaria_risk_zone = models.CharField(max_length=50, default='HIGH')
     pin_hash = models.CharField(max_length=255, blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.full_name} ({self.profession} - {self.facility_name})"
+        return f"{self.full_name} ({self.profession} - {self.facility_name}) - Approved: {self.is_approved}"
 
 
 class Patient(models.Model):
-    """Pediatric patient profile model."""
+    """Pediatric patient profile model scoped per facility."""
     patient_uid = models.CharField(max_length=50, unique=True)
     full_name = models.CharField(max_length=255)
     date_of_birth = models.DateField()
@@ -31,16 +32,18 @@ class Patient(models.Model):
     facility_name = models.CharField(max_length=255)
     county = models.CharField(max_length=100)
     risk_level = models.CharField(max_length=20, default='LOW')
+    created_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='created_patients')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.full_name} ({self.patient_uid})"
+        return f"{self.full_name} ({self.patient_uid}) - {self.facility_name}"
 
 
 class TriageSession(models.Model):
-    """WHO IMCI Triage Assessment session model."""
+    """WHO IMCI Triage Assessment session tracking patient visits."""
     patient = models.ForeignKey(Patient, on_delete=models.CASCADE, related_name='triage_sessions')
+    visit_number = models.IntegerField(default=1)
     danger_signs = models.TextField(blank=True, default='')
     temperature = models.FloatField(blank=True, null=True)
     respiratory_rate = models.IntegerField(blank=True, null=True)
@@ -53,10 +56,11 @@ class TriageSession(models.Model):
     nutrition_classification = models.CharField(max_length=100, blank=True, null=True)
     overall_risk = models.CharField(max_length=50, default='LOW')
     treatment_notes = models.TextField(blank=True, default='')
+    created_by = models.ForeignKey(UserProfile, on_delete=models.SET_NULL, null=True, blank=True, related_name='triage_sessions')
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Triage for {self.patient.full_name} - {self.overall_risk} ({self.created_at.strftime('%Y-%m-%d')})"
+        return f"Visit #{self.visit_number} for {self.patient.full_name} - Risk: {self.overall_risk} ({self.created_at.strftime('%Y-%m-%d')})"
 
 
 class Vaccination(models.Model):

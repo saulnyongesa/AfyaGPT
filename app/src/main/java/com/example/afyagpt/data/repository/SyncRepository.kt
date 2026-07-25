@@ -1,6 +1,7 @@
 package com.example.afyagpt.data.repository
 
 import com.example.afyagpt.data.local.dao.PatientDao
+import com.example.afyagpt.data.local.entity.PatientEntity
 import com.example.afyagpt.data.preferences.UserPreferences
 import com.example.afyagpt.util.AppConstants
 import com.example.afyagpt.util.DateTimeUtils
@@ -18,25 +19,20 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * SyncRepository.kt
- * Manages manual and background synchronization of offline patient data
- * to the live Heroku Django REST Framework backend server.
+ * SyncRepository.kt — Bi-directional Delta Data Synchronization Manager
+ *
+ * Uploads local offline patient records & triage sessions to the live Heroku Django REST backend,
+ * and downloads recent facility patient profiles updated by supervisors/admins.
  */
 @Singleton
 class SyncRepository @Inject constructor(
     private val patientDao: PatientDao,
     private val userPreferences: UserPreferences
 ) {
-    /**
-     * Performs a manual sync of all local Room DB patient records to the Heroku Django API.
-     */
     suspend fun syncOfflineData(): Result<Int> = withContext(Dispatchers.IO) {
         try {
             val patients = patientDao.getAllPatients().first()
-            if (patients.isEmpty()) {
-                userPreferences.updateSyncStatus(DateTimeUtils.now(), 0)
-                return@withContext Result.success(0)
-            }
+            val activeFacility = patients.firstOrNull()?.facilityName ?: "Health Center"
 
             val jsonPatients = JSONArray()
             for (p in patients) {
@@ -57,6 +53,7 @@ class SyncRepository @Inject constructor(
 
             val payload = JSONObject().apply {
                 put("patients", jsonPatients)
+                put("facilityName", activeFacility)
             }
 
             val url = URL(AppConstants.BACKEND_BASE_URL + "sync/")
@@ -76,6 +73,38 @@ class SyncRepository @Inject constructor(
 
             val responseCode = connection.responseCode
             if (responseCode in 200..299) {
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
+                val responseJson = JSONObject(responseText)
+
+                // Silent Upsert Downloaded Delta Patients from Backend
+                val downloadedArray = responseJson.optJSONArray("downloadedPatients")
+                if (downloadedArray != null) {
+                    for (i in 0 until downloadedArray.length()) {
+                        val d = downloadedArray.getJSONObject(i)
+                        val pUid = d.optString("patient_uid")
+                        if (pUid.isNotBlank()) {
+                            val existing = patientDao.getPatientByUid(pUid)
+                            val entity = PatientEntity(
+                                id = existing?.id ?: 0,
+                                patientUid = pUid,
+                                fullName = d.optString("full_name", "Unknown Patient"),
+                                dateOfBirth = d.optString("date_of_birth", "2024-01-01"),
+                                sex = d.optString("sex", "Male"),
+                                caregiverName = d.optString("caregiver_name").takeIf { it.isNotBlank() },
+                                guardianPhone = d.optString("guardian_phone").takeIf { it.isNotBlank() },
+                                birthCertificateNumber = d.optString("birth_certificate_number").takeIf { it.isNotBlank() },
+                                facilityName = d.optString("facility_name", activeFacility),
+                                county = d.optString("county", "Nairobi"),
+                                riskLevel = d.optString("risk_level", "LOW"),
+                                registeredBy = existing?.registeredBy ?: 1,
+                                createdAt = existing?.createdAt ?: DateTimeUtils.now(),
+                                updatedAt = DateTimeUtils.now()
+                            )
+                            patientDao.insertPatient(entity)
+                        }
+                    }
+                }
+
                 userPreferences.updateSyncStatus(DateTimeUtils.now(), 0)
                 Result.success(patients.size)
             } else {

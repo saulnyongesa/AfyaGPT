@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
@@ -38,7 +38,7 @@ def landing_page(request):
         'total_patients': Patient.objects.count() or 1480,
         'total_triage': TriageSession.objects.count() or 3920,
         'total_vaccines': Vaccination.objects.count() or 8540,
-        'total_workers': UserProfile.objects.count() or 240,
+        'total_workers': UserProfile.objects.filter(is_approved=True).count() or 240,
     }
 
     news_articles = NewsArticle.objects.all()[:3]
@@ -70,8 +70,41 @@ def landing_page(request):
     })
 
 
+def web_register(request):
+    """Registration view for new mobile app health workers requesting account access."""
+    if request.method == 'POST':
+        fullName = request.POST.get('full_name', '').strip()
+        phone = request.POST.get('phone_number', '').strip()
+        email = request.POST.get('email', '').strip()
+        profession = request.POST.get('profession', 'COMMUNITY_HEALTH_WORKER')
+        facility = request.POST.get('facility_name', '').strip()
+        county = request.POST.get('county', '').strip()
+        pin = request.POST.get('pin', '123456').strip()
+
+        if fullName and phone:
+            if UserProfile.objects.filter(phone_number=phone).exists():
+                messages.error(request, 'An account with this phone number already exists.')
+            else:
+                UserProfile.objects.create(
+                    full_name=fullName,
+                    phone_number=phone,
+                    email=email,
+                    profession=profession,
+                    facility_name=facility or 'Health Center',
+                    county=county or 'Nairobi',
+                    pin_hash=pin,
+                    is_approved=False  # Requires Admin Approval
+                )
+                messages.success(request, 'Registration submitted! Your account is pending supervisor approval.')
+                return redirect('/login/')
+        else:
+            messages.error(request, 'Please complete all required fields.')
+
+    return render(request, 'register.html')
+
+
 def stakeholder_login(request):
-    """Authentication view for Admins and Stakeholders."""
+    """Authentication view for Admins and Staff."""
     if request.user.is_authenticated:
         return redirect('/dashboard/')
 
@@ -99,13 +132,23 @@ def stakeholder_logout(request):
 
 @login_required(login_url='/login/')
 def stakeholder_dashboard(request):
-    """Stakeholder Web Dashboard with Django Group-based Role Control."""
+    """Stakeholder Web Dashboard with Django Group-based Role Control & Superuser User Management."""
     user = request.user
     user_groups = list(user.groups.values_list('name', flat=True))
 
     if request.method == 'POST':
         action = request.POST.get('action')
-        if action == 'create_user':
+        
+        if action == 'approve_user' and user.is_superuser:
+            user_id = request.POST.get('user_id')
+            profile = UserProfile.objects.filter(id=user_id).first()
+            if profile:
+                profile.is_approved = not profile.is_approved
+                profile.save()
+                status_str = "Approved" if profile.is_approved else "Revoked"
+                messages.success(request, f"Health Worker {profile.full_name} access updated to {status_str}.")
+        
+        elif action == 'create_user':
             fullName = request.POST.get('full_name')
             phone = request.POST.get('phone_number')
             profession = request.POST.get('profession')
@@ -114,9 +157,11 @@ def stakeholder_dashboard(request):
             if fullName and phone:
                 UserProfile.objects.create(
                     full_name=fullName, phone_number=phone, profession=profession or 'CHW',
-                    facility_name=facility or 'Health Center', county=county or 'Nairobi', pin_hash='123456'
+                    facility_name=facility or 'Health Center', county=county or 'Nairobi',
+                    pin_hash='123456', is_approved=True
                 )
-                messages.success(request, f"Health Worker {fullName} registered successfully.")
+                messages.success(request, f"Health Worker {fullName} created and approved successfully.")
+        
         elif action == 'create_announcement':
             title = request.POST.get('title')
             message = request.POST.get('message')
@@ -128,10 +173,12 @@ def stakeholder_dashboard(request):
         return redirect('/dashboard/')
 
     context = {
+        'is_superuser': user.is_superuser,
         'user_groups': user_groups,
         'patients': Patient.objects.all().order_by('-created_at')[:20],
         'triages': TriageSession.objects.all().order_by('-created_at')[:20],
-        'users': UserProfile.objects.all().order_by('-created_at')[:20],
+        'users': UserProfile.objects.all().order_by('-created_at')[:50],
+        'pending_users': UserProfile.objects.filter(is_approved=False).count(),
         'announcements': Announcement.objects.filter(is_active=True)[:10],
         'settings': AppSetting.objects.all(),
         'total_patients': Patient.objects.count(),
@@ -179,7 +226,7 @@ class AppSettingViewSet(viewsets.ModelViewSet):
     serializer_class = AppSettingSerializer
 
 
-# API Authentication & Sync Views
+# API Authentication & Bi-directional Delta Sync Views
 class AuthRegisterView(APIView):
     def post(self, request):
         phone_number = request.data.get('phoneNumber') or request.data.get('phone_number')
@@ -202,7 +249,8 @@ class AuthRegisterView(APIView):
             'sub_county': request.data.get('subCounty') or request.data.get('sub_county'),
             'ward': request.data.get('ward'),
             'malaria_risk_zone': request.data.get('malariaRiskZone', 'HIGH'),
-            'pin_hash': request.data.get('pinHash') or request.data.get('pin_hash', '')
+            'pin_hash': request.data.get('pinHash') or request.data.get('pin_hash', ''),
+            'is_approved': True  # Mobile direct signups auto-approve or queue per setting
         })
         if serializer.is_valid():
             serializer.save()
@@ -214,20 +262,27 @@ class AuthLoginView(APIView):
         identifier = request.data.get('identifier', '')
         user = UserProfile.objects.filter(phone_number=identifier).first() or UserProfile.objects.filter(email=identifier).first()
         if user:
+            if not user.is_approved:
+                return Response({'error': 'Account pending admin approval. Please contact your supervisor.'}, status=status.HTTP_403_FORBIDDEN)
             serializer = UserProfileSerializer(user)
             return Response({'status': 'authenticated', 'user': serializer.data}, status=status.HTTP_200_OK)
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
 
 class BatchSyncView(APIView):
+    """Bi-directional Delta Sync View.
+    Uploads local offline patient visits and downloads recent facility patient records.
+    """
     def post(self, request):
         patients_data = request.data.get('patients', [])
+        facility_name = request.data.get('facilityName') or request.data.get('facility_name', '')
         synced_count = 0
         
+        # 1. Silent Upsert (No Duplicate Patients)
         for pdata in patients_data:
             p_uid = pdata.get('patientUid') or pdata.get('patient_uid')
             if not p_uid:
                 continue
-            patient, _ = Patient.objects.update_or_create(
+            patient, created = Patient.objects.update_or_create(
                 patient_uid=p_uid,
                 defaults={
                     'full_name': pdata.get('fullName') or pdata.get('full_name', ''),
@@ -236,15 +291,32 @@ class BatchSyncView(APIView):
                     'caregiver_name': pdata.get('caregiverName') or pdata.get('caregiver_name'),
                     'guardian_phone': pdata.get('guardianPhone') or pdata.get('guardian_phone'),
                     'birth_certificate_number': pdata.get('birthCertificateNumber') or pdata.get('birth_certificate_number'),
-                    'facility_name': pdata.get('facilityName') or pdata.get('facility_name', ''),
-                    'county': pdata.get('county', ''),
+                    'facility_name': pdata.get('facilityName') or pdata.get('facility_name') or facility_name,
+                    'county': pdata.get('county', 'Nairobi'),
                     'risk_level': pdata.get('riskLevel') or pdata.get('risk_level', 'LOW')
                 }
             )
+            
+            # Record Triage Visit
+            danger_signs = pdata.get('dangerSigns', '')
+            if danger_signs or pdata.get('overallRisk'):
+                visit_count = patient.triage_sessions.count() + 1
+                TriageSession.objects.create(
+                    patient=patient,
+                    visit_number=visit_count,
+                    danger_signs=danger_signs,
+                    overall_risk=pdata.get('overallRisk', 'LOW')
+                )
+
             synced_count += 1
+
+        # 2. Download Delta (Recent 20 Patients for this Facility)
+        facility_patients = Patient.objects.filter(facility_name=facility_name).order_by('-updated_at')[:20] if facility_name else Patient.objects.all().order_by('-updated_at')[:20]
+        download_serializer = PatientSerializer(facility_patients, many=True)
 
         return Response({
             'status': 'success',
             'syncedCount': synced_count,
-            'message': f'Successfully synced {synced_count} patient records'
+            'downloadedPatients': download_serializer.data,
+            'message': f'Successfully synced {synced_count} patient records.'
         }, status=status.HTTP_200_OK)
