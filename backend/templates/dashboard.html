@@ -356,9 +356,7 @@
                                 <h3 class="fw-bold m-0">Facility & CHW Geographic Operations</h3>
                                 <p class="text-muted small m-0">Registered clinics & live interactive CHW home visit map</p>
                             </div>
-                            {% if is_superuser %}
                             <button class="btn btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#createFacilityModal"><i class="fa-solid fa-hospital-user me-2"></i>Add Facility</button>
-                            {% endif %}
                         </div>
 
                         <div class="row g-4">
@@ -687,6 +685,75 @@
                     <div class="modal-footer border-0">
                         <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn btn-primary rounded-3 px-4">Create Account</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Facility Modal -->
+    <div class="modal fade" id="createFacilityModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                <div class="modal-header bg-primary text-white rounded-top-4">
+                    <h5 class="modal-title fw-bold"><i class="fa-solid fa-hospital-user me-2"></i>Register Health Facility</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="create_facility">
+                    <div class="modal-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-8">
+                                <label class="form-label small fw-bold">Facility Name *</label>
+                                <input type="text" name="name" class="form-control" placeholder="e.g. Kibera Community Health Center" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label small fw-bold">Facility Code / MFL Code</label>
+                                <input type="text" name="code" class="form-control" placeholder="e.g. MFL-10492">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Facility Type</label>
+                                <select name="facility_type" class="form-select">
+                                    <option value="DISPENSARY">Dispensary</option>
+                                    <option value="HEALTH_CENTER" selected>Health Center</option>
+                                    <option value="SUB_COUNTY_HOSPITAL">Sub-County Hospital</option>
+                                    <option value="COUNTY_REFERRAL">County Referral Hospital</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">County *</label>
+                                <input type="text" name="county" class="form-control" value="Nairobi" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Sub-County</label>
+                                <input type="text" name="sub_county" class="form-control" placeholder="e.g. Lang'ata">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Village / Ward</label>
+                                <input type="text" name="village" class="form-control" placeholder="e.g. Makina">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Contact Phone</label>
+                                <input type="text" name="contact_phone" class="form-control" placeholder="e.g. 0712345678">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">Facility Email</label>
+                                <input type="email" name="email" class="form-control" placeholder="facility@afyagpt.go.ke">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">GPS Latitude</label>
+                                <input type="number" step="any" name="gps_latitude" class="form-control" placeholder="-1.286389">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-bold">GPS Longitude</label>
+                                <input type="number" step="any" name="gps_longitude" class="form-control" placeholder="36.817223">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-secondary rounded-3" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary rounded-3 px-4"><i class="fa-solid fa-check me-1"></i>Register Facility</button>
                     </div>
                 </form>
             </div>

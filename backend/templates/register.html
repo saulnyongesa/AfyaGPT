@@ -59,12 +59,12 @@
                         <!-- STEP 2: Address & Location -->
                         <div id="wizardStep2" class="wizard-step d-none">
                             <h5 class="fw-bold text-primary mb-3"><i class="fa-solid fa-map-location-dot me-2"></i>Step 2: Geographic Location & Coordinates</h5>
-                            <p class="text-muted small mb-4">GPS coordinates power the interactive CHW visit map on your facility dashboard.</p>
+                            <p class="text-muted small mb-4">Location is mandatory to position your health facility on the AfyaGPT map. You must grant browser location permission to proceed.</p>
                             
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">County / State <span class="text-danger">*</span></label>
-                                    <input type="text" name="county" class="form-control" placeholder="e.g. Nairobi, Kilifi, Kisumu" required>
+                                    <input type="text" name="county" id="county_field" class="form-control" placeholder="e.g. Nairobi, Kilifi, Kisumu" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label small fw-bold">Sub-County</label>
@@ -79,22 +79,30 @@
                                     <input type="text" name="address" class="form-control" placeholder="e.g. Off Waiyaki Way, Building 4">
                                 </div>
                             </div>
-                            <div class="row g-3 mb-3 bg-light p-3 rounded-3 border">
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">GPS Latitude</label>
-                                    <input type="number" step="any" name="gps_latitude" id="gps_lat" class="form-control" placeholder="-1.286389">
+
+                            <!-- Hidden GPS Inputs (No manual entry permitted) -->
+                            <input type="hidden" name="gps_latitude" id="gps_lat">
+                            <input type="hidden" name="gps_longitude" id="gps_lng">
+
+                            <div class="card p-4 text-center border-primary bg-light mb-3 rounded-4 shadow-sm">
+                                <i class="fa-solid fa-location-crosshairs fs-1 text-primary mb-2"></i>
+                                <h6 class="fw-bold m-0">Mandatory GPS Geolocation Access</h6>
+                                <p class="small text-muted my-2">Users cannot type coordinates manually. Please grant location access so system can automatically capture your facility GPS position.</p>
+                                <div class="my-2">
+                                    <button type="button" id="btnGrantGps" class="btn btn-primary rounded-pill px-4 fw-bold" onclick="detectCurrentGps()">
+                                        <i class="fa-solid fa-location-arrow me-2"></i>Grant Permission & Capture GPS
+                                    </button>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="form-label small fw-bold">GPS Longitude</label>
-                                    <input type="number" step="any" name="gps_longitude" id="gps_lng" class="form-control" placeholder="36.817223">
-                                </div>
-                                <div class="col-12 text-center">
-                                    <button type="button" class="btn btn-outline-secondary btn-sm rounded-pill" onclick="detectCurrentGps()"><i class="fa-solid fa-location-crosshairs me-1"></i>Auto-Detect My GPS Location</button>
+                                <div id="gpsStatusBadge" class="mt-2">
+                                    <span class="badge bg-danger p-2 fs-6"><i class="fa-solid fa-triangle-exclamation me-1"></i>Location Permission Required — Next Disabled</span>
                                 </div>
                             </div>
+
                             <div class="d-flex justify-content-between mt-4">
                                 <button type="button" class="btn btn-outline-secondary px-4 rounded-3" onclick="goToStep(1)"><i class="fa-solid fa-arrow-left me-2"></i>Back</button>
-                                <button type="button" class="btn btn-primary px-4 rounded-3 fw-bold" onclick="goToStep(3)">Save & Next: Contacts<i class="fa-solid fa-arrow-right ms-2"></i></button>
+                                <button type="button" id="btnStep2Next" class="btn btn-primary px-4 rounded-3 fw-bold" onclick="goToStep(3)" disabled>
+                                    Save & Next: Contacts<i class="fa-solid fa-arrow-right ms-2"></i>
+                                </button>
                             </div>
                         </div>
 
@@ -104,20 +112,20 @@
                             <p class="text-muted small mb-4">Help community members and staff locate your official website and channels.</p>
                             
                             <div class="mb-3">
-                                <label class="form-label small fw-bold">Contact Phone Number</label>
-                                <input type="tel" name="contact_phone" class="form-control" placeholder="+254 700 000000">
+                                <label class="form-label small fw-bold">Contact Phone Number <span class="text-danger">*</span></label>
+                                <input type="tel" name="contact_phone" class="form-control" placeholder="+254 700 000000" required>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label small fw-bold">Official Website URL</label>
+                                <label class="form-label small fw-bold">Official Website URL <span class="text-muted fw-normal">(Optional)</span></label>
                                 <input type="url" name="website" class="form-control" placeholder="https://www.facility.org">
                             </div>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Facebook Page URL</label>
+                                    <label class="form-label small fw-bold">Facebook Page URL <span class="text-muted fw-normal">(Optional)</span></label>
                                     <input type="url" name="facebook_url" class="form-control" placeholder="https://facebook.com/facility">
                                 </div>
                                 <div class="col-md-6">
-                                    <label class="form-label small fw-bold">Twitter / X Profile URL</label>
+                                    <label class="form-label small fw-bold">Twitter / X Profile URL <span class="text-muted fw-normal">(Optional)</span></label>
                                     <input type="url" name="twitter_url" class="form-control" placeholder="https://x.com/facility">
                                 </div>
                             </div>
@@ -177,19 +185,53 @@
             var pct = stepNumber * 25;
             progressBar.style.width = pct + '%';
         }
+
+        // Trigger GPS detection when entering Step 2
+        if (stepNumber === 2) {
+            detectCurrentGps();
+        }
     }
 
     function detectCurrentGps() {
+        var statusBadge = document.getElementById('gpsStatusBadge');
+        var btnNext = document.getElementById('btnStep2Next');
+        var btnGrant = document.getElementById('btnGrantGps');
+
         if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(function(pos) {
-                document.getElementById('gps_lat').value = pos.coords.latitude.toFixed(6);
-                document.getElementById('gps_lng').value = pos.coords.longitude.toFixed(6);
-                alert("GPS Coordinates detected: " + pos.coords.latitude.toFixed(4) + ", " + pos.coords.longitude.toFixed(4));
-            }, function(err) {
-                alert("Unable to retrieve GPS location. Please enter coordinates manually.");
-            });
+            if (statusBadge) {
+                statusBadge.innerHTML = '<span class="badge bg-warning text-dark p-2 fs-6"><i class="fa-solid fa-spinner fa-spin me-1"></i>Requesting Location Permission...</span>';
+            }
+            navigator.geolocation.getCurrentPosition(
+                function(pos) {
+                    var lat = pos.coords.latitude.toFixed(6);
+                    var lng = pos.coords.longitude.toFixed(6);
+                    document.getElementById('gps_lat').value = lat;
+                    document.getElementById('gps_lng').value = lng;
+                    
+                    if (statusBadge) {
+                        statusBadge.innerHTML = '<span class="badge bg-success p-2 fs-6"><i class="fa-solid fa-circle-check me-1"></i>GPS Location Granted & Captured: ' + lat + ', ' + lng + '</span>';
+                    }
+                    if (btnNext) btnNext.disabled = false;
+                    if (btnGrant) {
+                        btnGrant.classList.remove('btn-primary');
+                        btnGrant.classList.add('btn-success');
+                        btnGrant.innerHTML = '<i class="fa-solid fa-check-double me-2"></i>Location Permission Granted';
+                    }
+                },
+                function(err) {
+                    if (statusBadge) {
+                        statusBadge.innerHTML = '<span class="badge bg-danger p-2 fs-6"><i class="fa-solid fa-triangle-exclamation me-1"></i>Location Access Denied / Unavailable — Enable Location to Proceed</span>';
+                    }
+                    if (btnNext) btnNext.disabled = true;
+                    alert("Location access is mandatory to register your facility. Please grant location permission in your browser.");
+                },
+                { enableHighAccuracy: true, timeout: 10000 }
+            );
         } else {
-            alert("Geolocation is not supported by your browser.");
+            if (statusBadge) {
+                statusBadge.innerHTML = '<span class="badge bg-danger p-2 fs-6">Geolocation not supported by your browser</span>';
+            }
+            if (btnNext) btnNext.disabled = true;
         }
     }
 </script>

@@ -175,43 +175,88 @@ def dashboard_live_stream(request):
 
 
 def web_register(request):
-    """Registration view for new mobile app health workers requesting account access."""
+    """Registration view for Health Facilities and their Facility Admin account."""
     if request.method == 'POST':
-        fullName = request.POST.get('full_name', '').strip()
-        phone = request.POST.get('phone_number', '').strip()
+        name = request.POST.get('name', '').strip()
         email = request.POST.get('email', '').strip()
-        profession = request.POST.get('profession', 'COMMUNITY_HEALTH_WORKER')
-        role = request.POST.get('role', 'CHW')
-        facility_id = request.POST.get('facility_id')
-        facility_name = request.POST.get('facility_name', '').strip()
+        country = request.POST.get('country', 'Kenya').strip()
         county = request.POST.get('county', '').strip()
-        pin = request.POST.get('pin', '123456').strip()
+        sub_county = request.POST.get('sub_county', '').strip()
+        village = request.POST.get('village', '').strip()
+        address = request.POST.get('address', '').strip()
+        contact_phone = request.POST.get('contact_phone', '').strip()
+        website = request.POST.get('website', '').strip()
+        facebook_url = request.POST.get('facebook_url', '').strip()
+        twitter_url = request.POST.get('twitter_url', '').strip()
+        gps_lat = request.POST.get('gps_latitude')
+        gps_lng = request.POST.get('gps_longitude')
+        password = request.POST.get('password', '').strip()
+        confirm_password = request.POST.get('confirm_password', '').strip()
 
-        if fullName and phone:
-            if UserProfile.objects.filter(phone_number=phone).exists():
-                messages.error(request, 'An account with this phone number already exists.')
-            else:
-                facility_obj = HealthFacility.objects.filter(id=facility_id).first() if facility_id else None
-                user_prof = UserProfile.objects.create(
-                    full_name=fullName,
-                    phone_number=phone,
-                    email=email,
-                    profession=profession,
-                    role=role,
-                    facility=facility_obj,
-                    facility_name=facility_obj.name if facility_obj else (facility_name or 'Health Center'),
-                    county=county or 'Nairobi',
-                    pin_hash=pin,
-                    is_approved=False
-                )
-                log_audit_event(user_prof, 'USER_REGISTERED', 'UserProfile', user_prof.id, 'Self registered via web', request)
-                messages.success(request, 'Registration submitted! Your account is pending supervisor approval.')
-                return redirect('/login/')
+        if not name or not email:
+            messages.error(request, 'Facility Name and Official Email are required.')
+            return render(request, 'register.html')
+
+        if password and confirm_password and password != confirm_password:
+            messages.error(request, 'Passwords do not match. Please try again.')
+            return render(request, 'register.html')
+
+        # Mandatory core required fields for account activation (is_draft = False)
+        # Website and social URLs are optional.
+        has_core_info = bool(name and email and county and contact_phone and gps_lat and gps_lng and password)
+        is_draft = not has_core_info
+
+        # Create or update HealthFacility record
+        facility, created = HealthFacility.objects.update_or_create(
+            email=email,
+            defaults={
+                'name': name,
+                'country': country,
+                'county': county or 'Nairobi',
+                'sub_county': sub_county or None,
+                'village': village or None,
+                'address': address or None,
+                'contact_phone': contact_phone or None,
+                'website': website or None,
+                'facebook_url': facebook_url or None,
+                'twitter_url': twitter_url or None,
+                'gps_latitude': gps_lat or None,
+                'gps_longitude': gps_lng or None,
+                'is_draft': is_draft
+            }
+        )
+
+        # Create Django User & UserProfile for Facility Admin if password provided
+        if password:
+            user_obj, _ = User.objects.get_or_create(username=email, defaults={'email': email, 'is_staff': True})
+            user_obj.set_password(password)
+            user_obj.save()
+
+            UserProfile.objects.update_or_create(
+                email=email,
+                defaults={
+                    'full_name': f"{name} Admin",
+                    'phone_number': contact_phone or f"07{facility.id:08d}",
+                    'profession': 'FACILITY_ADMIN',
+                    'role': 'FACILITY_ADMIN',
+                    'facility': facility,
+                    'facility_name': name,
+                    'county': county or 'Nairobi',
+                    'is_approved': True,
+                    'is_active': True
+                }
+            )
+
+        log_audit_event(None, 'FACILITY_WEB_REGISTERED', 'HealthFacility', facility.id, f"Registered facility {name} (is_draft={is_draft})", request)
+
+        if is_draft:
+            messages.warning(request, f"Facility '{name}' saved as draft. Please complete location permission and all required fields to activate account.")
+            return redirect('/register/')
         else:
-            messages.error(request, 'Please complete all required fields.')
+            messages.success(request, f"Health Facility '{name}' registered and activated successfully! You can now log in with your email and password.")
+            return redirect('/login/')
 
-    facilities = HealthFacility.objects.all()
-    return render(request, 'register.html', {'facilities': facilities})
+    return render(request, 'register.html')
 
 
 def stakeholder_login(request):
@@ -307,17 +352,36 @@ def stakeholder_dashboard(request):
                 messages.success(request, f"PIN for {profile.full_name} successfully reset to {new_pin}.")
 
         # 2. Facility Actions
-        elif action == 'create_facility' and user.is_superuser:
+        elif action == 'create_facility':
             f_name = request.POST.get('name', '').strip()
             f_code = request.POST.get('code', '').strip()
+            f_type = request.POST.get('facility_type', 'DISPENSARY').strip()
             f_county = request.POST.get('county', 'Nairobi').strip()
+            f_subcounty = request.POST.get('sub_county', '').strip()
+            f_village = request.POST.get('village', '').strip()
             f_phone = request.POST.get('contact_phone', '').strip()
+            f_email = request.POST.get('email', '').strip()
+            f_lat = request.POST.get('gps_latitude')
+            f_lng = request.POST.get('gps_longitude')
+
             if f_name:
                 facility = HealthFacility.objects.create(
-                    name=f_name, code=f_code or None, county=f_county, contact_phone=f_phone
+                    name=f_name,
+                    code=f_code or None,
+                    facility_type=f_type,
+                    county=f_county,
+                    sub_county=f_subcounty or None,
+                    village=f_village or None,
+                    contact_phone=f_phone or None,
+                    email=f_email or None,
+                    gps_latitude=f_lat or None,
+                    gps_longitude=f_lng or None,
+                    is_draft=False
                 )
                 log_audit_event(admin_profile, 'FACILITY_CREATED', 'HealthFacility', facility.id, f"Created {f_name}", request)
-                messages.success(request, f"Health Facility {f_name} created successfully.")
+                messages.success(request, f"Health Facility '{f_name}' registered successfully!")
+            else:
+                messages.error(request, "Facility name is required.")
 
         # 3. Communications Actions
         elif action == 'create_announcement':
@@ -758,41 +822,49 @@ class BatchSyncView(APIView):
         
         # 1. Silent Upsert (No Duplicate Patients)
         for pdata in patients_data:
-            p_uid = pdata.get('patientUid') or pdata.get('patient_uid')
-            if not p_uid:
-                continue
-            patient, created = Patient.objects.update_or_create(
-                patient_uid=p_uid,
-                defaults={
-                    'full_name': pdata.get('fullName') or pdata.get('full_name', ''),
-                    'date_of_birth': pdata.get('dateOfBirth') or pdata.get('date_of_birth', '2024-01-01'),
-                    'sex': pdata.get('sex', 'Male'),
-                    'caregiver_name': pdata.get('caregiverName') or pdata.get('caregiver_name'),
-                    'guardian_phone': pdata.get('guardianPhone') or pdata.get('guardian_phone'),
-                    'birth_certificate_number': pdata.get('birthCertificateNumber') or pdata.get('birth_certificate_number'),
-                    'facility_name': pdata.get('facilityName') or pdata.get('facility_name') or facility_name,
-                    'county': pdata.get('county', 'Nairobi'),
-                    'risk_level': pdata.get('riskLevel') or pdata.get('risk_level', 'LOW')
-                }
-            )
-            
-            # Record Triage Visit
-            danger_signs = pdata.get('dangerSigns', '')
-            if danger_signs or pdata.get('overallRisk'):
-                visit_count = patient.triage_sessions.count() + 1
-                TriageSession.objects.create(
-                    patient=patient,
-                    visit_number=visit_count,
-                    visit_type=pdata.get('visitType', 'FACILITY'),
-                    visit_location_note=pdata.get('visitLocationNote'),
-                    gps_latitude=pdata.get('gpsLatitude'),
-                    gps_longitude=pdata.get('gpsLongitude'),
-                    danger_signs=danger_signs,
-                    overall_risk=pdata.get('overallRisk', 'LOW'),
-                    suggestion_source=pdata.get('suggestionSource', 'LOCAL_RULES')
-                )
+            try:
+                p_uid = pdata.get('patientUid') or pdata.get('patient_uid')
+                if not p_uid:
+                    continue
 
-            synced_count += 1
+                dob_val = pdata.get('dateOfBirth') or pdata.get('date_of_birth') or '2024-01-01'
+                if len(dob_val) < 10:
+                    dob_val = '2024-01-01'
+
+                patient, created = Patient.objects.update_or_create(
+                    patient_uid=p_uid,
+                    defaults={
+                        'full_name': pdata.get('fullName') or pdata.get('full_name', 'Patient'),
+                        'date_of_birth': dob_val,
+                        'sex': pdata.get('sex', 'Male'),
+                        'caregiver_name': pdata.get('caregiverName') or pdata.get('caregiver_name'),
+                        'guardian_phone': pdata.get('guardianPhone') or pdata.get('guardian_phone'),
+                        'birth_certificate_number': pdata.get('birthCertificateNumber') or pdata.get('birth_certificate_number'),
+                        'facility_name': pdata.get('facilityName') or pdata.get('facility_name') or facility_name,
+                        'county': pdata.get('county', 'Nairobi'),
+                        'risk_level': pdata.get('riskLevel') or pdata.get('risk_level', 'LOW')
+                    }
+                )
+                
+                # Record Triage Visit
+                danger_signs = pdata.get('dangerSigns', '')
+                if danger_signs or pdata.get('overallRisk'):
+                    visit_count = patient.triage_sessions.count() + 1
+                    TriageSession.objects.create(
+                        patient=patient,
+                        visit_number=visit_count,
+                        visit_type=pdata.get('visitType', 'FACILITY'),
+                        visit_location_note=pdata.get('visitLocationNote'),
+                        gps_latitude=pdata.get('gpsLatitude'),
+                        gps_longitude=pdata.get('gpsLongitude'),
+                        danger_signs=danger_signs,
+                        overall_risk=pdata.get('overallRisk', 'LOW'),
+                        suggestion_source=pdata.get('suggestionSource', 'LOCAL_RULES')
+                    )
+
+                synced_count += 1
+            except Exception as e:
+                print(f"Sync item error: {e}")
 
         # 2. Download Delta (Recent 20 Patients for this Facility)
         facility_patients = Patient.objects.filter(facility_name=facility_name).order_by('-updated_at')[:20] if facility_name else Patient.objects.all().order_by('-updated_at')[:20]

@@ -188,15 +188,17 @@ fun SignUpScreen(
             AfyaDropdownField(
                 label = "Select Health Facility *",
                 value = selectedDisplay,
-                options = if (facilityNames.isNotEmpty()) facilityNames else listOf("Default Health Center (Nairobi)", "Kilifi County Hospital (Kilifi)", "Kisumu East Dispensary (Kisumu)"),
+                options = if (facilityNames.isNotEmpty()) facilityNames else listOf("No facilities registered yet"),
                 onValueSelected = { selected ->
-                    val matched = facilities.find { "${it.name} (${it.county})" == selected }
-                    if (matched != null) {
-                        viewModel.selectFacility(matched.name, matched.county)
-                    } else {
-                        val nameOnly = selected.substringBefore(" (").trim()
-                        val countyOnly = selected.substringAfter("(").substringBefore(")").trim().ifBlank { "Nairobi" }
-                        viewModel.selectFacility(nameOnly, countyOnly)
+                    if (selected != "No facilities registered yet") {
+                        val matched = facilities.find { "${it.name} (${it.county})" == selected }
+                        if (matched != null) {
+                            viewModel.selectFacility(matched.name, matched.county)
+                        } else {
+                            val nameOnly = selected.substringBefore(" (").trim()
+                            val countyOnly = selected.substringAfter("(").substringBefore(")").trim().ifBlank { "Nairobi" }
+                            viewModel.selectFacility(nameOnly, countyOnly)
+                        }
                     }
                 },
                 errorMessage = state.facilityError
