@@ -1,12 +1,19 @@
 /**
  * ProfileScreen.kt
  *
- * User Profile and Settings screen allowing editable fields and live theme switching.
+ * User Profile and Settings screen allowing editable fields, live theme switching,
+ * profile photo upload/selection, and manual bi-directional data synchronization.
  * Package: com.example.afyagpt.ui.screens.profile
  */
 package com.example.afyagpt.ui.screens.profile
 
+import android.graphics.BitmapFactory
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,12 +28,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CloudSync
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -39,6 +50,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -58,10 +72,19 @@ fun ProfileScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val context = LocalContext.current
+
+    val imagePickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            viewModel.onProfilePhotoChange(uri.toString())
+        }
+    }
 
     LaunchedEffect(state.saveSuccess) {
         if (state.saveSuccess) {
-            snackbarHostState.showSnackbar("Profile updated successfully!")
+            snackbarHostState.showSnackbar("Profile & Sync updated successfully!")
             viewModel.clearSaveSuccess()
         }
     }
@@ -69,7 +92,7 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             AfyaTopBar(
-                title = "User Profile",
+                title = "User Profile & Sync",
                 onNavigateBack = onNavigateBack
             )
         },
@@ -95,7 +118,7 @@ fun ProfileScreen(
                 item {
                     if (state.error != null) {
                         AfyaAlertBanner(
-                            title = "Error",
+                            title = "Notice",
                             message = state.error!!,
                             type = BannerType.DANGER,
                             onDismiss = { viewModel.clearError() }
@@ -103,7 +126,7 @@ fun ProfileScreen(
                     }
                 }
 
-                // Profile Header Card with Fallback Initials Avatar
+                // Profile Header Card with Custom Image / Fallback Initials Avatar
                 item {
                     AfyaCard(modifier = Modifier.fillMaxWidth()) {
                         Column(
@@ -114,27 +137,73 @@ fun ProfileScreen(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(80.dp)
+                                    .size(96.dp)
                                     .clip(CircleShape)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                                    .clickable { imagePickerLauncher.launch("image/*") },
                                 contentAlignment = Alignment.Center
                             ) {
-                                val initials = state.fullName
-                                    .trim()
-                                    .split(" ")
-                                    .filter { it.isNotBlank() }
-                                    .mapNotNull { it.firstOrNull()?.uppercase() }
-                                    .take(2)
-                                    .joinToString("")
-                                Text(
-                                    text = if (initials.isNotEmpty()) initials else "?",
-                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                )
+                                val loadedBitmap = remember(state.profilePhotoUri) {
+                                    if (!state.profilePhotoUri.isNullOrBlank()) {
+                                        try {
+                                            val stream = context.contentResolver.openInputStream(Uri.parse(state.profilePhotoUri))
+                                            BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                                        } catch (e: Exception) {
+                                            null
+                                        }
+                                    } else null
+                                }
+
+                                if (loadedBitmap != null) {
+                                    Image(
+                                        bitmap = loadedBitmap,
+                                        contentDescription = "Profile Photo",
+                                        modifier = Modifier.fillMaxSize(),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    val initials = state.fullName
+                                        .trim()
+                                        .split(" ")
+                                        .filter { it.isNotBlank() }
+                                        .mapNotNull { it.firstOrNull()?.uppercase() }
+                                        .take(2)
+                                        .joinToString("")
+                                    Text(
+                                        text = if (initials.isNotEmpty()) initials else "?",
+                                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    )
+                                }
+
+                                // Overlay Camera Icon Badge
+                                Box(
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .size(28.dp)
+                                        .clip(CircleShape)
+                                        .background(MaterialTheme.colorScheme.primary),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.CameraAlt,
+                                        contentDescription = "Change Photo",
+                                        tint = MaterialTheme.colorScheme.onPrimary,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
                             }
+
                             Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedButton(
+                                onClick = { imagePickerLauncher.launch("image/*") }
+                            ) {
+                                Text("📷 Change Profile Photo")
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = state.fullName.ifBlank { "User Name" },
+                                text = state.fullName.ifBlank { "Health Worker" },
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -150,6 +219,50 @@ fun ProfileScreen(
                     }
                 }
 
+                // Data Synchronization & Cloud Backup Card
+                item {
+                    AfyaCard(modifier = Modifier.fillMaxWidth()) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Cloud Sync & Data Backup",
+                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = "Last synced: ${state.lastSyncTime}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                Icon(
+                                    imageVector = Icons.Default.CloudSync,
+                                    contentDescription = "Cloud Sync",
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(32.dp)
+                                )
+                            }
+
+                            AfyaPrimaryButton(
+                                text = if (state.isSyncing) "Syncing Cloud & Local Data..." else "Sync Data Now",
+                                onClick = viewModel::syncDataNow,
+                                isLoading = state.isSyncing,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+
                 // Editable Fields Section
                 item {
                     AfyaCard(modifier = Modifier.fillMaxWidth()) {
@@ -160,7 +273,7 @@ fun ProfileScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             Text(
-                                text = "Editable Information",
+                                text = "Editable Personal Information",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -243,7 +356,7 @@ fun ProfileScreen(
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Select your preferred visual style. The application will respond live.",
+                                text = "Select your preferred visual style. Settings persist across new device installations.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -275,7 +388,7 @@ fun ProfileScreen(
                 // Save Action Button
                 item {
                     AfyaPrimaryButton(
-                        text = "Save Profile Changes",
+                        text = "Save Profile & Settings",
                         onClick = viewModel::saveProfile,
                         isLoading = state.isSaving,
                         modifier = Modifier.fillMaxWidth()

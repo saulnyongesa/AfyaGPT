@@ -72,8 +72,7 @@ class HomeViewModel @Inject constructor(
                         user = user,
                         isLoading = false,
                         recentPatients = recentList,
-                        totalPatientsToday = recentList.size,
-                        unsyncedRecords = recentList.size
+                        totalPatientsToday = recentList.size
                     )
                 }
             }

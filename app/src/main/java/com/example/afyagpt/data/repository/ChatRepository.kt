@@ -1,7 +1,10 @@
 package com.example.afyagpt.data.repository
 
 import com.example.afyagpt.data.local.dao.ChatMessageDao
+import com.example.afyagpt.data.local.dao.PatientDao
+import com.example.afyagpt.data.local.dao.TriageDao
 import com.example.afyagpt.data.local.entity.ChatMessageEntity
+import com.example.afyagpt.domain.suggestion.ClinicalSuggestionCoordinator
 import com.example.afyagpt.util.DateTimeUtils
 import kotlinx.coroutines.flow.Flow
 import javax.inject.Inject
@@ -10,16 +13,21 @@ import javax.inject.Inject
  * ChatRepository.kt
  *
  * Repository for managing AI Assessment Assistant chat history and decision support responses.
+ * Context-aware: Loads actual patient triage history and routes suggestions through
+ * ClinicalSuggestionCoordinator instead of generic keyword matching.
  */
 class ChatRepository @Inject constructor(
-    private val chatMessageDao: ChatMessageDao
+    private val chatMessageDao: ChatMessageDao,
+    private val patientDao: PatientDao,
+    private val triageDao: TriageDao,
+    private val coordinator: ClinicalSuggestionCoordinator
 ) {
     fun getHistoryForPatient(patientId: Int): Flow<List<ChatMessageEntity>> =
         chatMessageDao.getMessagesForPatient(patientId)
 
     /**
-     * Inserts a user message and generates an AI IMCI decision-support response,
-     * persisting both to the Room database.
+     * Inserts a user message and generates a patient-specific AI IMCI decision-support response,
+     * persisting both to the Room database with suggestion source tracking.
      */
     suspend fun sendMessage(
         patientId: Int,
@@ -38,30 +46,50 @@ class ChatRepository @Inject constructor(
         )
         chatMessageDao.insertMessage(userMsg)
 
-        // 2. Generate Clinical AI Response (WHO IMCI Decision Support Logic)
-        val lower = userPrompt.lowercase()
-        val aiResponseText = when {
-            lower.contains("cough") || lower.contains("breathing") || lower.contains("chest") -> {
-                "Based on WHO IMCI guidelines for $patientName: If chest indrawing or stridor is present, classify as SEVERE PNEUMONIA. Give first dose of oral Amoxicillin (40-50mg/kg/dose) and refer urgently to facility."
-            }
-            lower.contains("fever") || lower.contains("malaria") || lower.contains("temp") -> {
-                "For fever assessment in high-risk zone: Perform Malaria Rapid Diagnostic Test (mRDT). If positive for P. falciparum, administer Artemisinin-based Combination Therapy (ACT) as per age weight schedule."
-            }
-            lower.contains("diarrhea") || lower.contains("stool") || lower.contains("dehydration") -> {
-                "For diarrhea assessment: Check skin pinch (goes back >2s = Severe Dehydration) and sunken eyes. Give ORS + Zinc (20mg daily for 10-14 days). If severe dehydration, initiate Plan C IV fluids."
-            }
-            lower.contains("vitals") || lower.contains("weight") || lower.contains("muac") -> {
-                "Vitals overview ($vitalsSummary): Check MUAC color band. <115mm indicates Severe Acute Malnutrition (SAM). Refer for Therapeutic Feeding (Ready-to-Use Therapeutic Food - RUTF)."
-            }
-            else -> {
-                "AfyaGPT AI Assistant: Clinical notes received for $patientName. Ensure general danger signs (inability to drink, vomiting everything, convulsions, lethargy) are evaluated first before protocol classification."
+        // 2. Fetch Patient Entity & Triage History from Database
+        val patient = patientDao.getPatientById(patientId)
+        val history = triageDao.getSessionsForPatientList(patientId)
+        val latestSession = history.firstOrNull()
+
+        // 3. Obtain Clinical Suggestion from Coordinator (Remote AI or Local IMCI Rules)
+        val suggestion = if (patient != null && latestSession != null) {
+            coordinator.getSuggestion(patient, latestSession, history)
+        } else null
+
+        // 4. Construct Patient-Specific AI Response
+        val responseBuilder = StringBuilder()
+        val displayName = patient?.fullName ?: patientName.ifBlank { "Patient" }
+
+        responseBuilder.append("Clinical Assessment for $displayName:\n")
+
+        if (latestSession != null) {
+            responseBuilder.append("• Overall Risk: ${latestSession.overallRisk}\n")
+            if (!latestSession.respiratoryClass.isNullOrBlank()) responseBuilder.append("• Respiratory: ${latestSession.respiratoryClass}\n")
+            if (!latestSession.diarrheaClass.isNullOrBlank()) responseBuilder.append("• Diarrhea: ${latestSession.diarrheaClass}\n")
+            if (!latestSession.feverClass.isNullOrBlank()) responseBuilder.append("• Fever: ${latestSession.feverClass}\n")
+            if (!latestSession.nutritionClass.isNullOrBlank()) responseBuilder.append("• Nutrition: ${latestSession.nutritionClass}\n")
+            responseBuilder.append("• Visit Channel: ${latestSession.visitType}\n")
+        } else {
+            responseBuilder.append("• No prior triage sessions recorded for this patient.\n")
+        }
+
+        if (suggestion != null && suggestion.treatmentPlan.isNotEmpty()) {
+            responseBuilder.append("\nRecommended Protocol Actions:\n")
+            suggestion.treatmentPlan.forEach { action ->
+                responseBuilder.append(" - $action\n")
             }
         }
+
+        val engineTag = if (suggestion?.source?.name == "REMOTE_AI") "[Engine: Remote AI]" else "[Engine: Local IMCI Rules]"
+        responseBuilder.append("\n$engineTag (Ref: WHO/MOH IMCI Standards)")
+
+        val aiMsgText = responseBuilder.toString()
 
         val aiMsg = ChatMessageEntity(
             patientId = patientId,
             sender = "AI",
-            message = aiResponseText,
+            message = aiMsgText,
+            suggestedRiskLevel = latestSession?.overallRisk ?: "LOW",
             timestamp = DateTimeUtils.now()
         )
         chatMessageDao.insertMessage(aiMsg)

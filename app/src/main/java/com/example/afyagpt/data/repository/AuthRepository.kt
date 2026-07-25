@@ -27,7 +27,8 @@ sealed class AuthResult<out T> {
 @Singleton
 class AuthRepository @Inject constructor(
     private val userDao: UserDao,
-    private val preferences: UserPreferences
+    private val preferences: UserPreferences,
+    private val syncRepository: SyncRepository
 ) {
 
     suspend fun registerUser(
@@ -90,6 +91,12 @@ class AuthRepository @Inject constructor(
                 userDao.updateLastLogin(localUser.id, now)
                 val user = User.fromEntity(localUser)
                 preferences.saveSession(userId = user.id, theme = user.themePreference)
+
+                // Background Sync on Login: Download latest facility patients and sync settings
+                try {
+                    syncRepository.syncOfflineData()
+                } catch (ignored: Exception) {}
+
                 return@withContext AuthResult.Success(user)
             } else {
                 return@withContext AuthResult.Error("Incorrect PIN. Please try again.")
@@ -105,6 +112,12 @@ class AuthRepository @Inject constructor(
                 val saved = userDao.findById(newId) ?: backendUser.toEntity()
                 val user = User.fromEntity(saved)
                 preferences.saveSession(userId = user.id, theme = user.themePreference)
+
+                // Background Sync on Login: Download latest facility patients and sync settings
+                try {
+                    syncRepository.syncOfflineData()
+                } catch (ignored: Exception) {}
+
                 AuthResult.Success(user)
             } else {
                 backendResult

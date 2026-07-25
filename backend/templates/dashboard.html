@@ -4,44 +4,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AfyaGPT — Stakeholder Management Dashboard</title>
+    <title>AfyaGPT — HMIS & Stakeholder Management Dashboard</title>
     <link rel="icon" type="image/png" href="{% static 'images/app_logo.png' %}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Leaflet JS Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #F4F6F9; }
-        .sidebar { background: #0D47A1; color: white; min-height: 100vh; }
+        body { font-family: 'Inter', sans-serif; background-color: #F4F6F9; color: #2C3E50; }
+        .sidebar { background: linear-gradient(180deg, #0D47A1 0%, #1565C0 100%); color: white; min-height: 100vh; }
         .sidebar-brand { font-weight: 800; font-size: 1.3rem; padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .sidebar-menu .nav-link { color: rgba(255,255,255,0.8); padding: 12px 20px; font-weight: 500; }
-        .sidebar-menu .nav-link.active, .sidebar-menu .nav-link:hover { color: #FBC02D; background: rgba(255,255,255,0.05); }
-        .card-stat { border-radius: 16px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .sidebar-menu .nav-link { color: rgba(255,255,255,0.85); padding: 12px 20px; font-weight: 500; border-radius: 8px; margin: 2px 10px; }
+        .sidebar-menu .nav-link.active, .sidebar-menu .nav-link:hover { color: #FBC02D; background: rgba(255,255,255,0.12); }
+        .card-stat { border-radius: 16px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.2s; }
+        .card-stat:hover { transform: translateY(-3px); }
+        .badge-risk-high { background-color: #FFEBEE; color: #C62828; font-weight: 600; }
+        .badge-risk-medium { background-color: #FFF8E1; color: #F57F17; font-weight: 600; }
+        .badge-risk-low { background-color: #E8F5E9; color: #2E7D32; font-weight: 600; }
+        .badge-visit-facility { background-color: #E3F2FD; color: #1565C0; }
+        .badge-visit-home { background-color: #EDE7F6; color: #512DA8; }
+        #homeVisitMap { height: 380px; border-radius: 16px; }
     </style>
 </head>
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
+            <!-- Sidebar Navigation -->
             <div class="col-md-3 col-lg-2 sidebar p-0">
                 <div class="sidebar-brand d-flex align-items-center gap-2">
-                    <img src="{% static 'images/app_logo.png' %}" alt="Logo" style="height:32px; width:32px; border-radius:6px; background:white; padding:2px;">
+                    <img src="{% static 'images/app_logo.png' %}" alt="Logo" style="height:34px; width:34px; border-radius:8px; background:white; padding:2px;">
                     AfyaGPT Portal
                 </div>
                 <div class="p-3 text-white-50 small border-bottom border-secondary">
                     Logged in as: <strong class="text-white">{{ user.username }}</strong><br>
-                    Role Groups: <span class="badge bg-warning text-dark">{% for g in user_groups %}{{ g }} {% empty %}Super Admin{% endfor %}</span>
+                    Role: <span class="badge bg-warning text-dark">{% if is_superuser %}SUPERADMIN{% else %}STAKEHOLDER{% endif %}</span>
                 </div>
                 <ul class="nav flex-column sidebar-menu mt-2">
-                    <li class="nav-item"><a class="nav-link active" href="#overview" data-bs-toggle="tab"><i class="fa-solid fa-chart-line me-2"></i> Overview</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="tab"><i class="fa-solid fa-user-nurse me-2"></i> Health Workers</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#patients" data-bs-toggle="tab"><i class="fa-solid fa-children me-2"></i> Synced Patients</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#announcements" data-bs-toggle="tab"><i class="fa-solid fa-bullhorn me-2"></i> Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#settings" data-bs-toggle="tab"><i class="fa-solid fa-sliders me-2"></i> System Settings</a></li>
-                    <li class="nav-item mt-4"><a class="nav-link text-danger" href="/admin/"><i class="fa-solid fa-user-shield me-2"></i> Django Admin</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="#overview" data-bs-toggle="tab"><i class="fa-solid fa-chart-pie me-2"></i> Overview Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="tab"><i class="fa-solid fa-users-gear me-2"></i> User & Roles</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#patients" data-bs-toggle="tab"><i class="fa-solid fa-hospital-user me-2"></i> Patient Data Oversight</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#facilities" data-bs-toggle="tab"><i class="fa-solid fa-building-circle-check me-2"></i> Facilities & CHWs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#reporting" data-bs-toggle="tab"><i class="fa-solid fa-file-invoice me-2"></i> HMIS / DHIS2 Reports</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#ai-oversight" data-bs-toggle="tab"><i class="fa-solid fa-brain me-2"></i> AI & Rules Oversight</a></li>
+                    {% if is_superuser %}
+                    <li class="nav-item"><a class="nav-link" href="#cms" data-bs-toggle="tab"><i class="fa-solid fa-pen-to-square me-2"></i> CMS Landing Editor</a></li>
+                    {% endif %}
+                    <li class="nav-item"><a class="nav-link" href="#announcements" data-bs-toggle="tab"><i class="fa-solid fa-bullhorn me-2"></i> Broadcast Alerts</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#settings" data-bs-toggle="tab"><i class="fa-solid fa-sliders me-2"></i> System Health</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#audit" data-bs-toggle="tab"><i class="fa-solid fa-shield-halved me-2"></i> Audit & Compliance</a></li>
+                    <li class="nav-item mt-3"><a class="nav-link text-danger" href="/logout/"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</a></li>
                 </ul>
             </div>
 
-            <!-- Main Content -->
+            <!-- Main Content Area -->
             <div class="col-md-9 col-lg-10 p-4">
                 {% if messages %}
                 {% for message in messages %}
@@ -53,42 +69,100 @@
                 {% endif %}
 
                 <div class="tab-content">
-                    <!-- Overview Tab -->
+
+                    <!-- MODULE 1: Overview Dashboard -->
                     <div class="tab-pane fade show active" id="overview">
-                        <h3 class="fw-bold mb-4">Stakeholder Dashboard Overview</h3>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">Healthcare Operational Dashboard</h3>
+                                <p class="text-muted small m-0">DHIS2 aligned indicators & live triage metrics</p>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <a href="?timeframe=today" class="btn btn-outline-primary btn-sm {% if timeframe == 'today' %}active{% endif %}">Today</a>
+                                <a href="?timeframe=week" class="btn btn-outline-primary btn-sm {% if timeframe == 'week' %}active{% endif %}">This Week</a>
+                                <a href="?timeframe=month" class="btn btn-outline-primary btn-sm {% if timeframe == 'month' %}active{% endif %}">This Month</a>
+                            </div>
+                        </div>
+
+                        <!-- Stat Cards Row -->
                         <div class="row g-3 mb-4">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card card-stat p-3 bg-white border-start border-primary border-4">
-                                    <div class="text-muted small">Registered Health Workers</div>
-                                    <div class="fs-2 fw-bold text-primary">{{ total_users }}</div>
+                                    <div class="text-muted small">Total Children Registered</div>
+                                    <div class="fs-2 fw-bold text-primary">{{ total_patients }}</div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="card card-stat p-3 bg-white border-start border-warning border-4">
-                                    <div class="text-muted small">Synced Patient Profiles</div>
-                                    <div class="fs-2 fw-bold text-warning">{{ total_patients }}</div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <div class="card card-stat p-3 bg-white border-start border-success border-4">
-                                    <div class="text-muted small">IMCI Triage Sessions</div>
+                                    <div class="text-muted small">Triage Assessments</div>
                                     <div class="fs-2 fw-bold text-success">{{ total_triage }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card card-stat p-3 bg-white border-start border-danger border-4">
+                                    <div class="text-muted small">High Risk / Red Cases</div>
+                                    <div class="fs-2 fw-bold text-danger">{{ risk_red }}</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="card card-stat p-3 bg-white border-start border-info border-4">
+                                    <div class="text-muted small">KEPI Immunization Rate</div>
+                                    <div class="fs-2 fw-bold text-info">{{ immunization_rate }}%</div>
                                 </div>
                             </div>
                         </div>
 
+                        <!-- Risk Breakdown & Visit Channels -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-heart-pulse me-2 text-danger"></i>Risk Classification Distribution</h6>
+                                    <div class="d-flex justify-content-around text-center py-2">
+                                        <div>
+                                            <span class="badge badge-risk-low px-3 py-2 fs-6">Low / Green</span>
+                                            <h4 class="mt-2 fw-bold text-success">{{ risk_green }}</h4>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-risk-medium px-3 py-2 fs-6">Medium / Yellow</span>
+                                            <h4 class="mt-2 fw-bold text-warning">{{ risk_yellow }}</h4>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-risk-high px-3 py-2 fs-6">Critical / Red</span>
+                                            <h4 class="mt-2 fw-bold text-danger">{{ risk_red }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <h6 class="fw-bold mb-3"><i class="fa-solid fa-house-medical me-2 text-primary"></i>Visit Channel Breakdown</h6>
+                                    <div class="d-flex justify-content-around text-center py-2">
+                                        <div>
+                                            <span class="badge badge-visit-facility px-3 py-2 fs-6">🏥 Facility Visits</span>
+                                            <h4 class="mt-2 fw-bold text-primary">{{ facility_visits_count }}</h4>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-visit-home px-3 py-2 fs-6">🏡 CHW Home Visits</span>
+                                            <h4 class="mt-2 fw-bold text-purple" style="color:#512DA8;">{{ home_visits_count }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Triage Assessments Table -->
                         <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
-                            <h5 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Recent Synced Triage Assessments</h5>
+                            <h5 class="fw-bold mb-3"><i class="fa-solid fa-clock-rotate-left me-2 text-primary"></i>Recent Clinical Assessments</h5>
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
                                         <tr>
                                             <th>Patient Name</th>
                                             <th>UID</th>
+                                            <th>Visit Type</th>
                                             <th>Overall Risk</th>
-                                            <th>Cough / Resp</th>
-                                            <th>Fever / Malaria</th>
-                                            <th>Date Synced</th>
+                                            <th>Engine Source</th>
+                                            <th>Date</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -96,17 +170,17 @@
                                         <tr>
                                             <td class="fw-semibold">{{ t.patient.full_name }}</td>
                                             <td><code>{{ t.patient.patient_uid }}</code></td>
+                                            <td><span class="badge {% if t.visit_type == 'CHW_HOME_VISIT' %}badge-visit-home{% else %}badge-visit-facility{% endif %}">{{ t.get_visit_type_display }}</span></td>
                                             <td>
-                                                <span class="badge {% if t.overall_risk == 'CRITICAL' %}bg-danger{% elif t.overall_risk == 'HIGH' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                                                <span class="badge {% if t.overall_risk == 'HIGH' or t.overall_risk == 'CRITICAL' %}badge-risk-high{% elif t.overall_risk == 'MEDIUM' %}badge-risk-medium{% else %}badge-risk-low{% endif %}">
                                                     {{ t.overall_risk }}
                                                 </span>
                                             </td>
-                                            <td>{{ t.cough_classification|default:"Normal" }}</td>
-                                            <td>{{ t.fever_classification|default:"Negative" }}</td>
-                                            <td class="small text-muted">{{ t.created_at }}</td>
+                                            <td><span class="badge bg-light text-dark border">{{ t.suggestion_source }}</span></td>
+                                            <td class="small text-muted">{{ t.created_at|date:"M d, H:i" }}</td>
                                         </tr>
                                         {% empty %}
-                                        <tr><td colspan="6" class="text-center text-muted">No triage sessions synced yet.</td></tr>
+                                        <tr><td colspan="6" class="text-center text-muted py-4">No assessments recorded yet.</td></tr>
                                         {% endfor %}
                                     </tbody>
                                 </table>
@@ -114,122 +188,134 @@
                         </div>
                     </div>
 
-                    <!-- Health Workers Tab -->
+                    <!-- MODULE 2: User and Role Management -->
                     <div class="tab-pane fade" id="users">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h3 class="fw-bold mb-0">Health Worker Account Manager</h3>
-                        </div>
-                        <div class="row g-4">
-                            <div class="col-md-5">
-                                <div class="card border-0 shadow-sm rounded-4 p-4">
-                                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-user-plus me-2 text-primary"></i>Register New Health Worker</h5>
-                                    <form method="POST">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="create_user">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Full Name *</label>
-                                            <input type="text" name="full_name" class="form-control" placeholder="Nurse Jane Wambui" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Phone Number *</label>
-                                            <input type="tel" name="phone_number" class="form-control" placeholder="0712345678" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Profession</label>
-                                            <select name="profession" class="form-select">
-                                                <option value="COMMUNITY_HEALTH_WORKER">Community Health Worker (CHW)</option>
-                                                <option value="NURSE">Nurse</option>
-                                                <option value="CLINICAL_OFFICER">Clinical Officer</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Facility Name</label>
-                                            <input type="text" name="facility_name" class="form-control" placeholder="Kibera Sub-County Clinic">
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">County</label>
-                                            <input type="text" name="county" class="form-control" placeholder="Nairobi">
-                                        </div>
-                                        <button type="submit" class="btn btn-primary w-100 py-2"><i class="fa-solid fa-check me-2"></i>Create Account</button>
-                                    </form>
-                                </div>
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">User & Role Management</h3>
+                                <p class="text-muted small m-0">Staff accounts, approval workflows, and role permissions</p>
                             </div>
-                            <div class="col-md-7">
-                                <div class="card border-0 shadow-sm rounded-4 p-4">
-                                    <h5 class="fw-bold mb-3">Registered Clinicians & CHWs</h5>
-                                    <div class="table-responsive">
-                                        <table class="table table-hover align-middle">
-                                            <thead class="table-light">
-                                                <tr>
-                                                    <th>Name</th>
-                                                    <th>Phone</th>
-                                                    <th>Profession</th>
-                                                    <th>Facility</th>
-                                                    <th>Status</th>
-                                                    {% if is_superuser %}<th>Action</th>{% endif %}
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {% for u in users %}
-                                                <tr>
-                                                    <td class="fw-semibold">{{ u.full_name }}</td>
-                                                    <td>{{ u.phone_number }}</td>
-                                                    <td><span class="badge bg-info text-dark">{{ u.profession }}</span></td>
-                                                    <td class="small">{{ u.facility_name }}</td>
-                                                    <td>
-                                                        {% if u.is_approved %}
-                                                        <span class="badge bg-success"><i class="fa-solid fa-check me-1"></i>Approved</span>
-                                                        {% else %}
-                                                        <span class="badge bg-warning text-dark"><i class="fa-solid fa-clock me-1"></i>Pending</span>
-                                                        {% endif %}
-                                                    </td>
-                                                    {% if is_superuser %}
-                                                    <td>
-                                                        <form method="POST" style="display:inline;">
-                                                            {% csrf_token %}
-                                                            <input type="hidden" name="action" value="approve_user">
-                                                            <input type="hidden" name="user_id" value="{{ u.id }}">
-                                                            <button type="submit" class="btn btn-sm {% if u.is_approved %}btn-outline-danger{% else %}btn-success{% endif %} py-1 px-2">
-                                                                {% if u.is_approved %}Revoke{% else %}Approve{% endif %}
-                                                            </button>
-                                                        </form>
-                                                    </td>
-                                                    {% endif %}
-                                                </tr>
-                                                {% endfor %}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
+                            {% if is_superuser %}
+                            <button class="btn btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#createUserModal"><i class="fa-solid fa-user-plus me-2"></i>Add Staff Member</button>
+                            {% endif %}
                         </div>
-                    </div>
 
-                    <!-- Patients Tab -->
-                    <div class="tab-pane fade" id="patients">
-                        <h3 class="fw-bold mb-4">Synced Pediatric Patients</h3>
                         <div class="card border-0 shadow-sm rounded-4 p-4">
                             <div class="table-responsive">
                                 <table class="table table-hover align-middle">
                                     <thead class="table-light">
                                         <tr>
+                                            <th>Full Name</th>
+                                            <th>Phone Number</th>
+                                            <th>Role</th>
+                                            <th>Facility</th>
+                                            <th>Status</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for u in users %}
+                                        <tr>
+                                            <td class="fw-bold">{{ u.full_name }}</td>
+                                            <td>{{ u.phone_number }}</td>
+                                            <td><span class="badge bg-info text-dark">{{ u.get_role_display }}</span></td>
+                                            <td>{{ u.facility_name }}</td>
+                                            <td>
+                                                <span class="badge {% if u.is_approved and u.is_active %}bg-success{% elif not u.is_approved %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                                                    {% if not u.is_approved %}Pending Approval{% elif u.is_active %}Active{% else %}Deactivated{% endif %}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                {% if is_superuser %}
+                                                <div class="btn-group btn-group-sm">
+                                                    <form method="POST" class="d-inline">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="action" value="approve_user">
+                                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                                        <button type="submit" class="btn btn-outline-success btn-sm">{% if u.is_approved %}Revoke{% else %}Approve{% endif %}</button>
+                                                    </form>
+                                                    <form method="POST" class="d-inline ms-1">
+                                                        {% csrf_token %}
+                                                        <input type="hidden" name="action" value="toggle_active_user">
+                                                        <input type="hidden" name="user_id" value="{{ u.id }}">
+                                                        <button type="submit" class="btn btn-outline-secondary btn-sm">{% if u.is_active %}Deactivate{% else %}Reactivate{% endif %}</button>
+                                                    </form>
+                                                </div>
+                                                {% else %}
+                                                <span class="text-muted small">View Only</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODULE 3: Patient & Clinical Data Oversight -->
+                    <div class="tab-pane fade" id="patients">
+                        <h3 class="fw-bold mb-4">Patient & Clinical Data Oversight</h3>
+                        
+                        <!-- High Risk Priority Flag Box -->
+                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-danger bg-opacity-10 border-start border-danger border-4">
+                            <h5 class="fw-bold text-danger"><i class="fa-solid fa-triangle-exclamation me-2"></i>High Risk & Flagged Cases Prioritization</h5>
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm align-middle">
+                                    <thead>
+                                        <tr>
                                             <th>Patient UID</th>
+                                            <th>Name</th>
+                                            <th>Caregiver</th>
+                                            <th>Phone</th>
+                                            <th>Facility</th>
+                                            <th>Risk Level</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for hp in high_risk_patients %}
+                                        <tr>
+                                            <td><code>{{ hp.patient_uid }}</code></td>
+                                            <td class="fw-bold">{{ hp.full_name }}</td>
+                                            <td>{{ hp.caregiver_name|default:"-" }}</td>
+                                            <td>{{ hp.guardian_phone|default:"-" }}</td>
+                                            <td>{{ hp.facility_name }}</td>
+                                            <td><span class="badge badge-risk-high">{{ hp.risk_level }}</span></td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="6" class="text-muted text-center py-2">No high-risk patient flags active.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- All Patient Registry Table -->
+                        <div class="card border-0 shadow-sm rounded-4 p-4">
+                            <h5 class="fw-bold mb-3">All Registered Patients</h5>
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>UID</th>
                                             <th>Full Name</th>
                                             <th>DOB</th>
                                             <th>Sex</th>
-                                            <th>Caregiver</th>
                                             <th>Facility</th>
+                                            <th>County</th>
+                                            <th>Risk</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {% for p in patients %}
                                         <tr>
                                             <td><code>{{ p.patient_uid }}</code></td>
-                                            <td class="fw-semibold">{{ p.full_name }}</td>
+                                            <td class="fw-bold">{{ p.full_name }}</td>
                                             <td>{{ p.date_of_birth }}</td>
                                             <td>{{ p.sex }}</td>
-                                            <td>{{ p.caregiver_name|default:"N/A" }}</td>
                                             <td>{{ p.facility_name }}</td>
+                                            <td>{{ p.county }}</td>
+                                            <td><span class="badge {% if p.risk_level == 'HIGH' or p.risk_level == 'CRITICAL' %}badge-risk-high{% elif p.risk_level == 'MEDIUM' %}badge-risk-medium{% else %}badge-risk-low{% endif %}">{{ p.risk_level }}</span></td>
                                         </tr>
                                         {% endfor %}
                                     </tbody>
@@ -238,94 +324,235 @@
                         </div>
                     </div>
 
-                    <!-- Announcements Tab -->
-                    <div class="tab-pane fade" id="announcements">
-                        <h3 class="fw-bold mb-4">Facility Announcements Broadcast</h3>
+                    <!-- MODULE 4: Facilities & CHW Management -->
+                    <div class="tab-pane fade" id="facilities">
+                        <h3 class="fw-bold mb-4">Facility & CHW Geographic Operations</h3>
                         <div class="row g-4">
-                            <div class="col-md-5">
-                                <div class="card border-0 shadow-sm rounded-4 p-4">
-                                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-paper-plane me-2 text-primary"></i>Publish Mobile Announcement</h5>
-                                    <form method="POST">
-                                        {% csrf_token %}
-                                        <input type="hidden" name="action" value="create_announcement">
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Title *</label>
-                                            <input type="text" name="title" class="form-control" placeholder="Malaria Outbreak Alert - Westlands" required>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Priority</label>
-                                            <select name="priority" class="form-select">
-                                                <option value="INFO">INFO (General Directive)</option>
-                                                <option value="URGENT">URGENT (Critical Outbreak)</option>
-                                            </select>
-                                        </div>
-                                        <div class="mb-3">
-                                            <label class="form-label fw-semibold">Message *</label>
-                                            <textarea name="message" rows="4" class="form-control" placeholder="All CHWs ensure extra screening for children presenting with high fever..." required></textarea>
-                                        </div>
-                                        <button type="submit" class="btn btn-warning fw-bold w-100 py-2"><i class="fa-solid fa-bullhorn me-2"></i>Publish Broadcast</button>
-                                    </form>
+                            <div class="col-md-7">
+                                <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                                    <h5 class="fw-bold mb-3"><i class="fa-solid fa-map-location-dot me-2 text-primary"></i>CHW Home Visits GPS Map</h5>
+                                    <div id="homeVisitMap"></div>
                                 </div>
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-5">
                                 <div class="card border-0 shadow-sm rounded-4 p-4">
-                                    <h5 class="fw-bold mb-3">Active Mobile Broadcasts</h5>
-                                    <div class="list-group list-group-flush">
-                                        {% for a in announcements %}
-                                        <div class="list-group-item px-0 py-3">
-                                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                                <h6 class="fw-bold mb-0">{{ a.title }}</h6>
-                                                <span class="badge {% if a.priority == 'URGENT' %}bg-danger{% else %}bg-primary{% endif %}">{{ a.priority }}</span>
+                                    <h5 class="fw-bold mb-3">Health Facilities Roster</h5>
+                                    <ul class="list-group list-group-flush">
+                                        {% for f in facilities %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong class="d-block">{{ f.name }}</strong>
+                                                <span class="small text-muted">{{ f.county }} · Code: {{ f.code|default:"-" }}</span>
                                             </div>
-                                            <p class="small text-muted mb-1">{{ a.message }}</p>
-                                            <span class="small text-secondary"><i class="fa-regular fa-clock me-1"></i>{{ a.created_at }}</span>
-                                        </div>
+                                            <span class="badge bg-primary rounded-pill">{{ f.staff_members.count }} Staff</span>
+                                        </li>
                                         {% empty %}
-                                        <div class="text-muted">No announcements published yet.</div>
+                                        <li class="list-group-item text-muted">No facility records registered yet.</li>
                                         {% endfor %}
-                                    </div>
+                                    </ul>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Settings Tab -->
+                    <!-- MODULE 5: HMIS / DHIS2 Reporting -->
+                    <div class="tab-pane fade" id="reporting">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">HMIS & DHIS2 Reporting</h3>
+                                <p class="text-muted small m-0">Standard Kenya Ministry of Health HMIS indicator export</p>
+                            </div>
+                            <div class="btn-group">
+                                <a href="/api/export/hmis/csv/" class="btn btn-success"><i class="fa-solid fa-file-excel me-2"></i>Export DHIS2 CSV</a>
+                                <a href="/api/export/triage/csv/" class="btn btn-outline-primary"><i class="fa-solid fa-download me-2"></i>Export Triage CSV</a>
+                                <a href="/api/export/patients/csv/" class="btn btn-outline-secondary"><i class="fa-solid fa-download me-2"></i>Export Patients CSV</a>
+                            </div>
+                        </div>
+
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <div class="text-muted small fw-bold">MOH-711-01</div>
+                                    <div class="fs-4 fw-bold text-dark mt-1">Under-5 Registrations</div>
+                                    <h2 class="text-primary mt-2">{{ total_patients }}</h2>
+                                    <span class="small text-muted">HMIS Monthly Indicator</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <div class="text-muted small fw-bold">MOH-711-03</div>
+                                    <div class="fs-4 fw-bold text-dark mt-1">High Risk Referral Ratio</div>
+                                    <h2 class="text-danger mt-2">{{ risk_red }} Cases</h2>
+                                    <span class="small text-muted">Immediate Facility Escalation</span>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-0 shadow-sm rounded-4 p-4">
+                                    <div class="text-muted small fw-bold">MOH-710-01</div>
+                                    <div class="fs-4 fw-bold text-dark mt-1">KEPI Immunization Rate</div>
+                                    <h2 class="text-info mt-2">{{ immunization_rate }}%</h2>
+                                    <span class="small text-muted">Vaccines Given vs Due</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODULE 6: AI & Suggestion Oversight -->
+                    <div class="tab-pane fade" id="ai-oversight">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h3 class="fw-bold m-0">AI & Clinical Rules Oversight</h3>
+                                <p class="text-muted small m-0">Audit clinical suggestions and clinician quality feedback</p>
+                            </div>
+                            {% if is_superuser %}
+                            <form method="POST" class="d-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="toggle_ai_engine">
+                                <button type="submit" class="btn {% if ai_enabled %}btn-success{% else %}btn-warning{% endif %}">
+                                    <i class="fa-solid fa-power-off me-2"></i>AI Engine: {% if ai_enabled %}ENABLED{% else %}DISABLED (Local Rules Only){% endif %}
+                                </button>
+                            </form>
+                            {% endif %}
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+                                    <div class="text-muted small">Assessed via Local IMCI Rules</div>
+                                    <h2 class="text-primary fw-bold mt-2">{{ rules_engine_count }}</h2>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card border-0 shadow-sm rounded-4 p-4 text-center">
+                                    <div class="text-muted small">Assessed via Remote AI Engine</div>
+                                    <h2 class="text-success fw-bold mt-2">{{ ai_engine_count }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODULE 7: CMS Landing Page Editor -->
+                    {% if is_superuser %}
+                    <div class="tab-pane fade" id="cms">
+                        <h3 class="fw-bold mb-4">CMS Landing Page Editor</h3>
+                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                            <h5 class="fw-bold mb-3">Landing Sections Editor</h5>
+                            {% for sec in landing_sections %}
+                            <form method="POST" class="border rounded-3 p-3 mb-3 bg-white">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update_section">
+                                <input type="hidden" name="section_id" value="{{ sec.id }}">
+                                <div class="row g-2">
+                                    <div class="col-md-3"><label class="form-label small fw-bold">Section</label><input type="text" class="form-control form-control-sm" value="{{ sec.get_section_type_display }}" readonly></div>
+                                    <div class="col-md-4"><label class="form-label small fw-bold">Title</label><input type="text" name="title" class="form-control form-control-sm" value="{{ sec.title }}"></div>
+                                    <div class="col-md-5"><label class="form-label small fw-bold">Subtitle</label><input type="text" name="subtitle" class="form-control form-control-sm" value="{{ sec.subtitle }}"></div>
+                                    <div class="col-12 mt-2"><label class="form-label small fw-bold">Body Content</label><textarea name="body" class="form-control form-control-sm" rows="2">{{ sec.body }}</textarea></div>
+                                    <div class="col-12 text-end mt-2"><button type="submit" class="btn btn-primary btn-sm">Save {{ sec.get_section_type_display }}</button></div>
+                                </div>
+                            </form>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- MODULE 8: Broadcast Alerts -->
+                    <div class="tab-pane fade" id="announcements">
+                        <h3 class="fw-bold mb-4">Broadcast Announcements & Directives</h3>
+                        <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+                            <h5 class="fw-bold mb-3">Publish New Directive</h5>
+                            <form method="POST">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="create_announcement">
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Title</label>
+                                    <input type="text" name="title" class="form-control" placeholder="e.g. Malaria Surge Season Alert" required>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Priority</label>
+                                    <select name="priority" class="form-select">
+                                        <option value="INFO">INFO</option>
+                                        <option value="URGENT">URGENT</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small fw-bold">Message</label>
+                                    <textarea name="message" class="form-control" rows="3" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Broadcast Directive</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- MODULE 9: System Health & Settings -->
                     <div class="tab-pane fade" id="settings">
-                        <h3 class="fw-bold mb-4">System Settings Control</h3>
+                        <h3 class="fw-bold mb-4">System Health & Global Settings</h3>
                         <div class="card border-0 shadow-sm rounded-4 p-4">
-                            <table class="table table-hover align-middle">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Setting Key</th>
-                                        <th>Value</th>
-                                        <th>Description</th>
-                                    </tr>
-                                </thead>
+                            <h5 class="fw-bold mb-3">Configuration Parameters</h5>
+                            <table class="table align-middle">
+                                <thead><tr><th>Setting Key</th><th>Value</th><th>Description</th></tr></thead>
                                 <tbody>
-                                    <tr>
-                                        <td><code>MALARIA_ALERT_MODE</code></td>
-                                        <td><span class="badge bg-success">ACTIVE_HIGH</span></td>
-                                        <td>Forces CHWs in malaria endemic zones to perform blood RDT triage.</td>
-                                    </tr>
-                                    <tr>
-                                        <td><code>IMCI_GUIDELINE_VERSION</code></td>
-                                        <td><span class="badge bg-secondary">2026_WHO_MOH_V3</span></td>
-                                        <td>Current active WHO IMCI clinical decision guidelines.</td>
-                                    </tr>
-                                    <tr>
-                                        <td><code>BACKGROUND_SYNC_MINS</code></td>
-                                        <td><span class="badge bg-info text-dark">15 MINS</span></td>
-                                        <td>Interval for WorkManager automatic periodic data sync.</td>
-                                    </tr>
+                                    {% for s in settings %}
+                                    <tr><td><code>{{ s.key }}</code></td><td>{{ s.value }}</td><td>{{ s.description }}</td></tr>
+                                    {% empty %}
+                                    <tr><td colspan="3" class="text-muted">No custom app settings defined.</td></tr>
+                                    {% endfor %}
                                 </tbody>
                             </table>
                         </div>
                     </div>
+
+                    <!-- MODULE 10: Audit Logs & Security -->
+                    <div class="tab-pane fade" id="audit">
+                        <h3 class="fw-bold mb-4">Security & Audit Compliance Log</h3>
+                        <div class="card border-0 shadow-sm rounded-4 p-4">
+                            <div class="table-responsive">
+                                <table class="table table-sm align-middle">
+                                    <thead class="table-light">
+                                        <tr><th>Timestamp</th><th>User</th><th>Action</th><th>Target</th><th>Details</th><th>IP Address</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for a in audit_logs %}
+                                        <tr>
+                                            <td class="small text-muted">{{ a.timestamp|date:"Y-m-d H:i:s" }}</td>
+                                            <td class="fw-semibold">{{ a.user.full_name|default:"System" }}</td>
+                                            <td><span class="badge bg-dark">{{ a.action }}</span></td>
+                                            <td>{{ a.target_model }} ({{ a.target_id }})</td>
+                                            <td class="small">{{ a.details }}</td>
+                                            <td><code>{{ a.ip_address|default:"127.0.0.1" }}</code></td>
+                                        </tr>
+                                        {% empty %}
+                                        <tr><td colspan="6" class="text-muted text-center py-3">No audit log entries recorded.</td></tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Bootstrap & Leaflet JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var map = L.map('homeVisitMap').setView([-1.286389, 36.817223], 7);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18,
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            var markersData = JSON.parse('{{ gps_markers_json|escapejs }}');
+            markersData.forEach(function(m) {
+                if (m.lat && m.lng) {
+                    L.marker([m.lat, m.lng]).addTo(map)
+                        .bindPopup("<b>" + m.patient_name + "</b><br>Visit: " + m.visit_type + "<br>Risk: " + m.risk + "<br>Date: " + m.date);
+                }
+            });
+        });
+    </script>
 </body>
 </html>

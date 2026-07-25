@@ -437,13 +437,22 @@
                 <h2 class="section-title">Driven by Health Equity & Technology</h2>
             </div>
             <div class="row g-4">
-                {% for member in team_members %}
+                {% for member in stakeholders %}
                 <div class="col-md-4">
                     <div class="team-card h-100">
-                        <img src="{{ member.avatar }}" alt="{{ member.name }}" class="team-avatar">
-                        <h5 class="fw-bold mb-1">{{ member.name }}</h5>
+                        <img src="{{ member.photo_url|default:'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80' }}" alt="{{ member.full_name }}" class="team-avatar">
+                        <h5 class="fw-bold mb-1">{{ member.full_name }}</h5>
                         <div class="text-primary small fw-semibold mb-3">{{ member.role }}</div>
                         <p class="text-muted small mb-0">{{ member.bio }}</p>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-md-4">
+                    <div class="team-card h-100">
+                        <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Saul Nyongesa" class="team-avatar">
+                        <h5 class="fw-bold mb-1">Saul Nyongesa</h5>
+                        <div class="text-primary small fw-semibold mb-3">Lead Founder & Healthcare Systems Architect</div>
+                        <p class="text-muted small mb-0">Pioneering mHealth solutions and AI-driven clinical decision support for Sub-Saharan Africa.</p>
                     </div>
                 </div>
                 {% endfor %}

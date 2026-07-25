@@ -304,7 +304,7 @@ fun HomeScreen(
                     items(state.recentPatients) { patient ->
                         HomePatientItem(
                             patient = patient,
-                            onClick = { onNavigate("patient/${patient.id}") }
+                            onClick = { onNavigate(AppRoute.PatientDetail.createRoute(patient.id)) }
                         )
                     }
                 }

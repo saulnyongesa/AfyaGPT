@@ -20,6 +20,9 @@ data class TriageUiState(
     val selectedPatientId: Int? = null,
     val selectedPatientName: String = "",
     val selectedPatientAgeMonths: Int = 0,
+    val visitType: String = "FACILITY", // FACILITY or CHW_HOME_VISIT
+    val visitLocationNote: String = "",
+    val suggestionSource: String = "LOCAL_RULES",
     
     // Step 1: Danger Signs
     val unableToDrink: Boolean = false,
@@ -123,6 +126,14 @@ class TriageViewModel @Inject constructor(
 
     fun selectPatient(id: Int, name: String, ageMonths: Int) {
         _state.update { it.copy(selectedPatientId = id, selectedPatientName = name, selectedPatientAgeMonths = ageMonths) }
+    }
+
+    fun setVisitType(type: String) {
+        _state.update { it.copy(visitType = type) }
+    }
+
+    fun setVisitLocationNote(note: String) {
+        _state.update { it.copy(visitLocationNote = note) }
     }
 
     fun updateDangerSign(field: String, value: Boolean) {

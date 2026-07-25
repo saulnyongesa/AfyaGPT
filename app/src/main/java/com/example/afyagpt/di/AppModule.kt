@@ -7,6 +7,7 @@ import com.example.afyagpt.data.local.dao.VaccinationDao
 import com.example.afyagpt.data.preferences.UserPreferences
 import com.example.afyagpt.data.repository.AuthRepository
 import com.example.afyagpt.data.repository.PatientRepository
+import com.example.afyagpt.data.repository.SyncRepository
 import com.example.afyagpt.data.repository.VaccinationRepository
 import dagger.Module
 import dagger.Provides
@@ -39,9 +40,10 @@ object AppModule {
     @Singleton
     fun provideAuthRepository(
         userDao: UserDao,
-        preferences: UserPreferences
+        preferences: UserPreferences,
+        syncRepository: SyncRepository
     ): AuthRepository {
-        return AuthRepository(userDao, preferences)
+        return AuthRepository(userDao, preferences, syncRepository)
     }
 
     /**

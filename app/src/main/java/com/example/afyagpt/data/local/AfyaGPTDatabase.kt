@@ -58,7 +58,7 @@ import com.example.afyagpt.data.local.entity.VaccinationEntity
         VaccinationEntity::class,
         ChatMessageEntity::class
     ],
-    version = 4,
+    version = 5,
     exportSchema = true
 )
 abstract class AfyaGPTDatabase : RoomDatabase() {

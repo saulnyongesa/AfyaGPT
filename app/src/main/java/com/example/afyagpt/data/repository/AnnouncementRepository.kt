@@ -4,6 +4,7 @@ import com.example.afyagpt.util.AppConstants
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
+import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 import javax.inject.Inject
@@ -24,6 +25,7 @@ data class RemoteAnnouncement(
 /**
  * AnnouncementRepository.kt
  * Fetches Ministry & Facility directives from the central backend when internet is available.
+ * Handles both direct JSON arrays [...] and paginated DRF responses {"results": [...]}.
  */
 @Singleton
 class AnnouncementRepository @Inject constructor() {
@@ -34,13 +36,22 @@ class AnnouncementRepository @Inject constructor() {
             val connection = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("Accept", "application/json")
-                connectTimeout = 5000
-                readTimeout = 5000
+                connectTimeout = 6000
+                readTimeout = 6000
             }
 
             if (connection.responseCode in 200..299) {
-                val responseText = connection.inputStream.bufferedReader().use { it.readText() }
-                val jsonArray = JSONArray(responseText)
+                val responseText = connection.inputStream.bufferedReader().use { it.readText() }.trim()
+
+                val jsonArray = if (responseText.startsWith("{")) {
+                    val obj = JSONObject(responseText)
+                    obj.optJSONArray("results") ?: JSONArray()
+                } else if (responseText.startsWith("[")) {
+                    JSONArray(responseText)
+                } else {
+                    JSONArray()
+                }
+
                 val list = mutableListOf<RemoteAnnouncement>()
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
@@ -57,7 +68,9 @@ class AnnouncementRepository @Inject constructor() {
                 }
                 return@withContext list
             }
-        } catch (ignored: Exception) { }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
         emptyList()
     }
 }

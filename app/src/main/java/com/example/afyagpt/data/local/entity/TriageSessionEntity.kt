@@ -84,6 +84,15 @@ data class TriageSessionEntity(
     /** Timestamp when the record was created. */
     @ColumnInfo(name = "created_at") val createdAt: String,
     
+    /** Visit channel: FACILITY or CHW_HOME_VISIT. */
+    @ColumnInfo(name = "visit_type") val visitType: String = "FACILITY",
+
+    /** Optional village/GPS location note for home visits. */
+    @ColumnInfo(name = "visit_location_note") val visitLocationNote: String? = null,
+
+    /** Engine source that produced recommendation: LOCAL_RULES or REMOTE_AI. */
+    @ColumnInfo(name = "suggestion_source") val suggestionSource: String = "LOCAL_RULES",
+
     /** Indicates if the record has been synced to the remote server. */
     @ColumnInfo(name = "is_synced") val isSynced: Boolean = false
 )

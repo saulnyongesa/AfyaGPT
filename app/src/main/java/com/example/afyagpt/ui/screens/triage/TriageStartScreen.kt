@@ -102,7 +102,47 @@ fun TriageStartScreen(
                 modifier = Modifier.fillMaxWidth()
             )
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Visit Channel Selection Card
+            AfyaCard(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(12.dp)) {
+                    Text(
+                        text = "Assessment Channel",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        androidx.compose.material3.FilterChip(
+                            selected = state.visitType == "FACILITY",
+                            onClick = { viewModel.setVisitType("FACILITY") },
+                            label = { Text("🏥 Facility Visit") },
+                            modifier = Modifier.weight(1f)
+                        )
+                        androidx.compose.material3.FilterChip(
+                            selected = state.visitType == "CHW_HOME_VISIT",
+                            onClick = { viewModel.setVisitType("CHW_HOME_VISIT") },
+                            label = { Text("🏡 CHW Home Visit") },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    if (state.visitType == "CHW_HOME_VISIT") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        com.example.afyagpt.ui.components.AfyaTextField(
+                            value = state.visitLocationNote,
+                            onValueChange = viewModel::setVisitLocationNote,
+                            label = "Household / Village Note (Optional)",
+                            placeholder = "e.g. Village A, Household #42"
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
             
             Text(
                 text = "Select Patient to Begin",

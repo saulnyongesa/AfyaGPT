@@ -37,6 +37,9 @@ interface TriageDao {
     @Query("SELECT * FROM triage_sessions WHERE patient_id = :patientId ORDER BY created_at DESC")
     fun getSessionsForPatient(patientId: Int): Flow<List<TriageSessionEntity>>
 
+    @Query("SELECT * FROM triage_sessions WHERE patient_id = :patientId ORDER BY created_at DESC")
+    suspend fun getSessionsForPatientList(patientId: Int): List<TriageSessionEntity>
+
     /**
      * Retrieves the most recent triage sessions across all patients.
      * @param limit The maximum number of sessions to return.

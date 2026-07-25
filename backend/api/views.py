@@ -1,3 +1,8 @@
+import csv
+import json
+from datetime import timedelta
+from django.utils import timezone
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -5,16 +10,40 @@ from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
+
 from .models import (
-    UserProfile, Patient, TriageSession, Vaccination, ChatMessage,
-    NewsArticle, ContactInquiry, Announcement, AppSetting
+    HealthFacility, UserProfile, Patient, TriageSession, Vaccination, ChatMessage,
+    ClinicalFeedback, AuditLog, NewsArticle, ContactInquiry, Announcement,
+    AppSetting, LandingSection, Stakeholder
 )
 from .serializers import (
-    UserProfileSerializer, PatientSerializer,
+    HealthFacilitySerializer, UserProfileSerializer, PatientSerializer,
     TriageSessionSerializer, VaccinationSerializer, ChatMessageSerializer,
-    NewsArticleSerializer, ContactInquirySerializer,
-    AnnouncementSerializer, AppSettingSerializer
+    ClinicalFeedbackSerializer, AuditLogSerializer, NewsArticleSerializer,
+    ContactInquirySerializer, AnnouncementSerializer, AppSettingSerializer,
+    LandingSectionSerializer, StakeholderSerializer
 )
+
+
+def log_audit_event(user_profile, action, target_model="", target_id="", details="", request=None):
+    """Helper to record audit trail entries for HIPAA & HMIS data compliance."""
+    ip_addr = None
+    if request:
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip_addr = x_forwarded_for.split(',')[0]
+        else:
+            ip_addr = request.META.get('REMOTE_ADDR')
+
+    AuditLog.objects.create(
+        user=user_profile,
+        action=action,
+        target_model=target_model,
+        target_id=str(target_id),
+        details=details,
+        ip_address=ip_addr
+    )
+
 
 def landing_page(request):
     """Renders the official AfyaGPT landing page with dynamic stats, news, and contact form."""
@@ -35,38 +64,21 @@ def landing_page(request):
             messages.error(request, 'Please complete all required fields.')
 
     stats = {
-        'total_patients': Patient.objects.count() or 1480,
-        'total_triage': TriageSession.objects.count() or 3920,
-        'total_vaccines': Vaccination.objects.count() or 8540,
-        'total_workers': UserProfile.objects.filter(is_approved=True).count() or 240,
+        'total_patients': Patient.objects.count(),
+        'total_triage': TriageSession.objects.count(),
+        'total_vaccines': Vaccination.objects.filter(is_given=True).count(),
+        'total_workers': UserProfile.objects.filter(is_approved=True).count(),
     }
 
+    sections = LandingSection.objects.filter(is_active=True)
+    stakeholders = Stakeholder.objects.filter(is_active=True)
     news_articles = NewsArticle.objects.all()[:3]
-    team_members = [
-        {
-            'name': 'Saul Nyongesa',
-            'role': 'Lead Founder & Healthcare Systems Architect',
-            'bio': 'Pioneering mHealth solutions and AI-driven clinical decision support for Sub-Saharan Africa.',
-            'avatar': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'
-        },
-        {
-            'name': 'Dr. Amina Omondi',
-            'role': 'Chief Medical Officer (Pediatrics & IMCI Specialist)',
-            'bio': 'Expert in WHO Integrated Management of Childhood Illness guidelines and rural health policy.',
-            'avatar': 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80'
-        },
-        {
-            'name': 'David Kiprop',
-            'role': 'Head of Mobile & Offline Systems',
-            'bio': 'Specializing in resilient Room SQLite architectures, Jetpack Compose, and low-connectivity syncing.',
-            'avatar': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80'
-        }
-    ]
 
     return render(request, 'index.html', {
         'stats': stats,
+        'sections': sections,
+        'stakeholders': stakeholders,
         'news_articles': news_articles,
-        'team_members': team_members
     })
 
 
@@ -77,7 +89,9 @@ def web_register(request):
         phone = request.POST.get('phone_number', '').strip()
         email = request.POST.get('email', '').strip()
         profession = request.POST.get('profession', 'COMMUNITY_HEALTH_WORKER')
-        facility = request.POST.get('facility_name', '').strip()
+        role = request.POST.get('role', 'CHW')
+        facility_id = request.POST.get('facility_id')
+        facility_name = request.POST.get('facility_name', '').strip()
         county = request.POST.get('county', '').strip()
         pin = request.POST.get('pin', '123456').strip()
 
@@ -85,22 +99,27 @@ def web_register(request):
             if UserProfile.objects.filter(phone_number=phone).exists():
                 messages.error(request, 'An account with this phone number already exists.')
             else:
-                UserProfile.objects.create(
+                facility_obj = HealthFacility.objects.filter(id=facility_id).first() if facility_id else None
+                user_prof = UserProfile.objects.create(
                     full_name=fullName,
                     phone_number=phone,
                     email=email,
                     profession=profession,
-                    facility_name=facility or 'Health Center',
+                    role=role,
+                    facility=facility_obj,
+                    facility_name=facility_obj.name if facility_obj else (facility_name or 'Health Center'),
                     county=county or 'Nairobi',
                     pin_hash=pin,
-                    is_approved=False  # Requires Admin Approval
+                    is_approved=False
                 )
+                log_audit_event(user_prof, 'USER_REGISTERED', 'UserProfile', user_prof.id, 'Self registered via web', request)
                 messages.success(request, 'Registration submitted! Your account is pending supervisor approval.')
                 return redirect('/login/')
         else:
             messages.error(request, 'Please complete all required fields.')
 
-    return render(request, 'register.html')
+    facilities = HealthFacility.objects.all()
+    return render(request, 'register.html', {'facilities': facilities})
 
 
 def stakeholder_login(request):
@@ -132,63 +151,296 @@ def stakeholder_logout(request):
 
 @login_required(login_url='/login/')
 def stakeholder_dashboard(request):
-    """Stakeholder Web Dashboard with Django Group-based Role Control & Superuser User Management."""
+    """
+    Comprehensive 10-Category Dashboard aligned with DHIS2 HMIS standards,
+    RBAC user management, facility operations, clinical quality feedback,
+    and superadmin CMS editing.
+    """
     user = request.user
     user_groups = list(user.groups.values_list('name', flat=True))
 
+    # Timeframe filter query parameter
+    time_filter = request.GET.get('timeframe', 'month')
+    now = timezone.now()
+    if time_filter == 'today':
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elif time_filter == 'week':
+        start_date = now - timedelta(days=7)
+    elif time_filter == 'month':
+        start_date = now - timedelta(days=30)
+    else:
+        start_date = None
+
     if request.method == 'POST':
         action = request.POST.get('action')
-        
+        admin_profile = UserProfile.objects.filter(email=user.email).first()
+
+        # 1. User Management Actions
         if action == 'approve_user' and user.is_superuser:
             user_id = request.POST.get('user_id')
             profile = UserProfile.objects.filter(id=user_id).first()
             if profile:
                 profile.is_approved = not profile.is_approved
                 profile.save()
-                status_str = "Approved" if profile.is_approved else "Revoked"
-                messages.success(request, f"Health Worker {profile.full_name} access updated to {status_str}.")
-        
-        elif action == 'create_user':
-            fullName = request.POST.get('full_name')
-            phone = request.POST.get('phone_number')
-            profession = request.POST.get('profession')
-            facility = request.POST.get('facility_name')
-            county = request.POST.get('county')
-            if fullName and phone:
-                UserProfile.objects.create(
-                    full_name=fullName, phone_number=phone, profession=profession or 'CHW',
-                    facility_name=facility or 'Health Center', county=county or 'Nairobi',
-                    pin_hash='123456', is_approved=True
+                log_audit_event(admin_profile, 'USER_APPROVAL_TOGGLED', 'UserProfile', profile.id, f"Approved status set to {profile.is_approved}", request)
+                messages.success(request, f"Health Worker {profile.full_name} status set to {'Approved' if profile.is_approved else 'Pending'}.")
+
+        elif action == 'toggle_active_user' and user.is_superuser:
+            user_id = request.POST.get('user_id')
+            profile = UserProfile.objects.filter(id=user_id).first()
+            if profile:
+                profile.is_active = not profile.is_active
+                profile.save()
+                log_audit_event(admin_profile, 'USER_ACTIVE_TOGGLED', 'UserProfile', profile.id, f"Is_active set to {profile.is_active}", request)
+                messages.success(request, f"Account for {profile.full_name} is now {'Active' if profile.is_active else 'Deactivated'}.")
+
+        elif action == 'change_user_role' and user.is_superuser:
+            user_id = request.POST.get('user_id')
+            new_role = request.POST.get('role', 'CHW')
+            profile = UserProfile.objects.filter(id=user_id).first()
+            if profile:
+                profile.role = new_role
+                profile.save()
+                log_audit_event(admin_profile, 'USER_ROLE_CHANGED', 'UserProfile', profile.id, f"Role changed to {new_role}", request)
+                messages.success(request, f"Role for {profile.full_name} updated to {new_role}.")
+
+        elif action == 'reset_user_pin' and user.is_superuser:
+            user_id = request.POST.get('user_id')
+            new_pin = request.POST.get('new_pin', '123456').strip()
+            profile = UserProfile.objects.filter(id=user_id).first()
+            if profile:
+                profile.pin_hash = new_pin
+                profile.save()
+                log_audit_event(admin_profile, 'USER_PIN_RESET', 'UserProfile', profile.id, 'Admin triggered PIN reset', request)
+                messages.success(request, f"PIN for {profile.full_name} successfully reset to {new_pin}.")
+
+        # 2. Facility Actions
+        elif action == 'create_facility' and user.is_superuser:
+            f_name = request.POST.get('name', '').strip()
+            f_code = request.POST.get('code', '').strip()
+            f_county = request.POST.get('county', 'Nairobi').strip()
+            f_phone = request.POST.get('contact_phone', '').strip()
+            if f_name:
+                facility = HealthFacility.objects.create(
+                    name=f_name, code=f_code or None, county=f_county, contact_phone=f_phone
                 )
-                messages.success(request, f"Health Worker {fullName} created and approved successfully.")
-        
+                log_audit_event(admin_profile, 'FACILITY_CREATED', 'HealthFacility', facility.id, f"Created {f_name}", request)
+                messages.success(request, f"Health Facility {f_name} created successfully.")
+
+        # 3. Communications Actions
         elif action == 'create_announcement':
             title = request.POST.get('title')
-            message = request.POST.get('message')
+            message_text = request.POST.get('message')
             priority = request.POST.get('priority', 'INFO')
-            if title and message:
-                Announcement.objects.create(title=title, message=message, priority=priority)
-                messages.success(request, "Announcement published to mobile CHWs.")
+            if title and message_text:
+                ann = Announcement.objects.create(title=title, message=message_text, priority=priority)
+                log_audit_event(admin_profile, 'ANNOUNCEMENT_CREATED', 'Announcement', ann.id, title, request)
+                messages.success(request, "Announcement broadcasted to mobile health workers.")
+
+        # 4. Clinical Quality Feedback
+        elif action == 'submit_feedback':
+            session_id = request.POST.get('session_id')
+            rating = request.POST.get('rating', 'CORRECT')
+            corrected = request.POST.get('corrected_classification', '')
+            notes = request.POST.get('notes', '')
+            t_session = TriageSession.objects.filter(id=session_id).first()
+            if t_session:
+                fb = ClinicalFeedback.objects.create(
+                    triage_session=t_session, clinician=admin_profile,
+                    rating=rating, corrected_classification=corrected, notes=notes
+                )
+                log_audit_event(admin_profile, 'CLINICAL_FEEDBACK_SUBMITTED', 'ClinicalFeedback', fb.id, f"Rating: {rating}", request)
+                messages.success(request, "Clinical suggestion feedback recorded.")
+
+        # 5. AI Engine Setting Toggle
+        elif action == 'toggle_ai_engine' and user.is_superuser:
+            setting, _ = AppSetting.objects.get_or_create(key='AI_ENGINE_ENABLED', defaults={'value': 'true', 'description': 'Enable/Disable remote AI engine'})
+            new_val = 'false' if setting.value.lower() == 'true' else 'true'
+            setting.value = new_val
+            setting.save()
+            log_audit_event(admin_profile, 'AI_ENGINE_TOGGLED', 'AppSetting', setting.id, f"AI Engine set to {new_val}", request)
+            messages.success(request, f"AI Decision Support engine set to {'ENABLED' if new_val == 'true' else 'DISABLED (Local Rules Only)'}.")
+
+        # 6. CMS Editor Actions
+        elif action == 'update_section' and user.is_superuser:
+            section_id = request.POST.get('section_id')
+            section = LandingSection.objects.filter(id=section_id).first()
+            if section:
+                section.title = request.POST.get('title', section.title)
+                section.subtitle = request.POST.get('subtitle', section.subtitle)
+                section.body = request.POST.get('body', section.body)
+                section.image_url = request.POST.get('image_url', section.image_url)
+                section.updated_by = user
+                section.save()
+                log_audit_event(admin_profile, 'CMS_SECTION_UPDATED', 'LandingSection', section.id, section.title, request)
+                messages.success(request, f"Updated {section.get_section_type_display()} section.")
+
+        elif action == 'save_stakeholder' and user.is_superuser:
+            stakeholder_id = request.POST.get('stakeholder_id')
+            stakeholder = Stakeholder.objects.filter(id=stakeholder_id).first() if stakeholder_id else Stakeholder()
+            stakeholder.full_name = request.POST.get('full_name', '')
+            stakeholder.role = request.POST.get('role', '')
+            stakeholder.bio = request.POST.get('bio', '')
+            stakeholder.photo_url = request.POST.get('photo_url', '')
+            stakeholder.save()
+            log_audit_event(admin_profile, 'CMS_STAKEHOLDER_SAVED', 'Stakeholder', stakeholder.id, stakeholder.full_name, request)
+            messages.success(request, f"Saved stakeholder {stakeholder.full_name}.")
 
         return redirect('/dashboard/')
+
+    # Query Datasets with Time Filters
+    patient_qs = Patient.objects.all()
+    triage_qs = TriageSession.objects.all()
+    if start_date:
+        patient_qs = patient_qs.filter(created_at__gte=start_date)
+        triage_qs = triage_qs.filter(created_at__gte=start_date)
+
+    # Aggregates for Dashboard Counters
+    total_patients_count = patient_qs.count()
+    total_triage_count = triage_qs.count()
+
+    risk_green = triage_qs.filter(overall_risk__iexact='LOW').count()
+    risk_yellow = triage_qs.filter(overall_risk__iexact='MEDIUM').count()
+    risk_red = triage_qs.filter(overall_risk__in=['HIGH', 'CRITICAL']).count()
+
+    # Home visits vs Facility visits
+    facility_visits_count = triage_qs.filter(visit_type='FACILITY').count()
+    home_visits_count = triage_qs.filter(visit_type='CHW_HOME_VISIT').count()
+
+    # Suggestion Engine Distribution
+    rules_engine_count = triage_qs.filter(suggestion_source='LOCAL_RULES').count()
+    ai_engine_count = triage_qs.filter(suggestion_source='REMOTE_AI').count()
+
+    # Immunization Summary
+    total_vaccines_given = Vaccination.objects.filter(is_given=True).count()
+    total_vaccines_pending = Vaccination.objects.filter(is_given=False).count()
+    immunization_rate = round((total_vaccines_given / max(1, (total_vaccines_given + total_vaccines_pending))) * 100, 1)
+
+    # GPS Home Visit Map Data
+    gps_markers = []
+    for t in triage_qs.filter(gps_latitude__isnull=False, gps_longitude__isnull=False)[:50]:
+        gps_markers.append({
+            'lat': t.gps_latitude,
+            'lng': t.gps_longitude,
+            'patient_name': t.patient.full_name,
+            'risk': t.overall_risk,
+            'visit_type': t.get_visit_type_display(),
+            'date': t.created_at.strftime('%b %d, %Y')
+        })
+
+    # System AI Engine setting state
+    ai_setting = AppSetting.objects.filter(key='AI_ENGINE_ENABLED').first()
+    ai_enabled = ai_setting.value.lower() == 'true' if ai_setting else True
 
     context = {
         'is_superuser': user.is_superuser,
         'user_groups': user_groups,
-        'patients': Patient.objects.all().order_by('-created_at')[:20],
-        'triages': TriageSession.objects.all().order_by('-created_at')[:20],
-        'users': UserProfile.objects.all().order_by('-created_at')[:50],
+        'timeframe': time_filter,
+        'total_patients': total_patients_count,
+        'total_triage': total_triage_count,
+        'risk_green': risk_green,
+        'risk_yellow': risk_yellow,
+        'risk_red': risk_red,
+        'facility_visits_count': facility_visits_count,
+        'home_visits_count': home_visits_count,
+        'rules_engine_count': rules_engine_count,
+        'ai_engine_count': ai_engine_count,
+        'total_vaccines_given': total_vaccines_given,
+        'immunization_rate': immunization_rate,
+        'ai_enabled': ai_enabled,
+        'gps_markers_json': json.dumps(gps_markers),
+
+        'patients': patient_qs.order_by('-created_at')[:25],
+        'triages': triage_qs.order_by('-created_at')[:25],
+        'high_risk_patients': Patient.objects.filter(risk_level__in=['HIGH', 'CRITICAL']).order_by('-updated_at')[:15],
+        'users': UserProfile.objects.all().order_by('-created_at'),
         'pending_users': UserProfile.objects.filter(is_approved=False).count(),
+        'facilities': HealthFacility.objects.all(),
         'announcements': Announcement.objects.filter(is_active=True)[:10],
+        'landing_sections': LandingSection.objects.all(),
+        'stakeholders': Stakeholder.objects.all(),
+        'audit_logs': AuditLog.objects.all()[:30],
+        'feedbacks': ClinicalFeedback.objects.all().order_by('-created_at')[:20],
         'settings': AppSetting.objects.all(),
-        'total_patients': Patient.objects.count(),
-        'total_triage': TriageSession.objects.count(),
-        'total_users': UserProfile.objects.count()
     }
     return render(request, 'dashboard.html', context)
 
 
-# REST ViewSets
+# ─── Exportable Reports Endpoints ─────────────────────────────────────────────
+
+@login_required(login_url='/login/')
+def export_patients_csv(request):
+    """Exports patient registry as CSV report."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="AfyaGPT_Patient_Registry.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['Patient UID', 'Full Name', 'DOB', 'Sex', 'Caregiver', 'Guardian Phone', 'Facility', 'County', 'Risk Level', 'Registered Date'])
+
+    for p in Patient.objects.all().order_by('-created_at'):
+        writer.writerow([
+            p.patient_uid, p.full_name, p.date_of_birth, p.sex,
+            p.caregiver_name or '', p.guardian_phone or '',
+            p.facility_name, p.county, p.risk_level,
+            p.created_at.strftime('%Y-%m-%d %H:%M')
+        ])
+    return response
+
+
+@login_required(login_url='/login/')
+def export_triage_csv(request):
+    """Exports triage assessment history as CSV report."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="AfyaGPT_Triage_Assessments.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        'Visit ID', 'Patient UID', 'Patient Name', 'Visit Type', 'Overall Risk',
+        'Cough Class', 'Diarrhea Class', 'Fever Class', 'Ear Class', 'Nutrition Class',
+        'Suggestion Source', 'Assessed Date'
+    ])
+
+    for t in TriageSession.objects.all().order_by('-created_at'):
+        writer.writerow([
+            t.id, t.patient.patient_uid, t.patient.full_name, t.get_visit_type_display(),
+            t.overall_risk, t.cough_classification or '', t.diarrhea_classification or '',
+            t.fever_classification or '', t.ear_classification or '', t.nutrition_classification or '',
+            t.suggestion_source, t.created_at.strftime('%Y-%m-%d %H:%M')
+        ])
+    return response
+
+
+@login_required(login_url='/login/')
+def export_hmis_indicators_csv(request):
+    """Exports Kenya HMIS / DHIS2 Aligned Summary Indicators as CSV."""
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="AfyaGPT_HMIS_DHIS2_Indicators.csv"'
+
+    writer = csv.writer(response)
+    writer.writerow(['HMIS Indicator Code', 'Indicator Description', 'Value', 'Reporting Unit'])
+
+    total_p = max(1, Patient.objects.count())
+    total_t = max(1, TriageSession.objects.count())
+    high_risk_count = TriageSession.objects.filter(overall_risk__in=['HIGH', 'CRITICAL']).count()
+    vax_given = Vaccination.objects.filter(is_given=True).count()
+    vax_total = max(1, Vaccination.objects.count())
+
+    writer.writerow(['MOH-711-01', 'Total Children Under-5 Registered', Patient.objects.count(), 'Children'])
+    writer.writerow(['MOH-711-02', 'Total Triage Assessments Completed', TriageSession.objects.count(), 'Visits'])
+    writer.writerow(['MOH-711-03', 'High Risk / Severe Cases Identified', high_risk_count, 'Cases'])
+    writer.writerow(['MOH-711-04', 'Proportion High Risk Referred (%)', round((high_risk_count / total_t) * 100, 1), '%'])
+    writer.writerow(['MOH-710-01', 'KEPI Immunization Coverage Rate (%)', round((vax_given / vax_total) * 100, 1), '%'])
+    writer.writerow(['MOH-711-05', 'CHW Home Visit Assessments Ratio (%)', round((TriageSession.objects.filter(visit_type='CHW_HOME_VISIT').count() / total_t) * 100, 1), '%'])
+
+    return response
+
+
+# ─── REST ViewSets ─────────────────────────────────────────────────────────────
+
+class HealthFacilityViewSet(viewsets.ModelViewSet):
+    queryset = HealthFacility.objects.all()
+    serializer_class = HealthFacilitySerializer
+
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all().order_by('-created_at')
     serializer_class = UserProfileSerializer
@@ -209,12 +461,20 @@ class ChatMessageViewSet(viewsets.ModelViewSet):
     queryset = ChatMessage.objects.all().order_by('timestamp')
     serializer_class = ChatMessageSerializer
 
+class ClinicalFeedbackViewSet(viewsets.ModelViewSet):
+    queryset = ClinicalFeedback.objects.all().order_by('-created_at')
+    serializer_class = ClinicalFeedbackSerializer
+
+class AuditLogViewSet(viewsets.ModelViewSet):
+    queryset = AuditLog.objects.all().order_by('-timestamp')
+    serializer_class = AuditLogSerializer
+
 class NewsArticleViewSet(viewsets.ModelViewSet):
     queryset = NewsArticle.objects.all()
     serializer_class = NewsArticleSerializer
 
 class ContactInquiryViewSet(viewsets.ModelViewSet):
-    queryset = ContactInquiry.objects.all()
+    queryset = ContactInquiry.objects.all().order_by('-created_at')
     serializer_class = ContactInquirySerializer
 
 class AnnouncementViewSet(viewsets.ModelViewSet):
@@ -225,48 +485,32 @@ class AppSettingViewSet(viewsets.ModelViewSet):
     queryset = AppSetting.objects.all()
     serializer_class = AppSettingSerializer
 
+class LandingSectionViewSet(viewsets.ModelViewSet):
+    queryset = LandingSection.objects.filter(is_active=True).order_by('order')
+    serializer_class = LandingSectionSerializer
 
-# API Authentication & Bi-directional Delta Sync Views
-class AuthRegisterView(APIView):
-    def post(self, request):
-        phone_number = request.data.get('phoneNumber') or request.data.get('phone_number')
-        if not phone_number:
-            return Response({'error': 'Phone number is required'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        user = UserProfile.objects.filter(phone_number=phone_number).first()
-        if user:
-            serializer = UserProfileSerializer(user)
-            return Response({'status': 'exists', 'user': serializer.data}, status=status.HTTP_200_OK)
-        
-        serializer = UserProfileSerializer(data={
-            'full_name': request.data.get('fullName') or request.data.get('full_name', ''),
-            'phone_number': phone_number,
-            'email': request.data.get('email'),
-            'profession': request.data.get('profession', 'COMMUNITY_HEALTH_WORKER'),
-            'professional_number': request.data.get('professionalNumber') or request.data.get('professional_number'),
-            'facility_name': request.data.get('facilityName') or request.data.get('facility_name', ''),
-            'county': request.data.get('county', ''),
-            'sub_county': request.data.get('subCounty') or request.data.get('sub_county'),
-            'ward': request.data.get('ward'),
-            'malaria_risk_zone': request.data.get('malariaRiskZone', 'HIGH'),
-            'pin_hash': request.data.get('pinHash') or request.data.get('pin_hash', ''),
-            'is_approved': True  # Mobile direct signups auto-approve or queue per setting
-        })
-        if serializer.is_valid():
-            serializer.save()
-            return Response({'status': 'created', 'user': serializer.data}, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class StakeholderViewSet(viewsets.ModelViewSet):
+    queryset = Stakeholder.objects.filter(is_active=True).order_by('order')
+    serializer_class = StakeholderSerializer
 
-class AuthLoginView(APIView):
+
+class MobileAuthCheckView(APIView):
+    """Mobile Login Authentication & Offline Account Validation View."""
     def post(self, request):
         identifier = request.data.get('identifier', '')
         user = UserProfile.objects.filter(phone_number=identifier).first() or UserProfile.objects.filter(email=identifier).first()
         if user:
             if not user.is_approved:
                 return Response({'error': 'Account pending admin approval. Please contact your supervisor.'}, status=status.HTTP_403_FORBIDDEN)
+            if not user.is_active:
+                return Response({'error': 'Account deactivated. Please contact your administrator.'}, status=status.HTTP_403_FORBIDDEN)
+            
+            user.last_active_at = timezone.now()
+            user.save()
             serializer = UserProfileSerializer(user)
             return Response({'status': 'authenticated', 'user': serializer.data}, status=status.HTTP_200_OK)
         return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+
 
 class BatchSyncView(APIView):
     """Bi-directional Delta Sync View.
@@ -304,8 +548,13 @@ class BatchSyncView(APIView):
                 TriageSession.objects.create(
                     patient=patient,
                     visit_number=visit_count,
+                    visit_type=pdata.get('visitType', 'FACILITY'),
+                    visit_location_note=pdata.get('visitLocationNote'),
+                    gps_latitude=pdata.get('gpsLatitude'),
+                    gps_longitude=pdata.get('gpsLongitude'),
                     danger_signs=danger_signs,
-                    overall_risk=pdata.get('overallRisk', 'LOW')
+                    overall_risk=pdata.get('overallRisk', 'LOW'),
+                    suggestion_source=pdata.get('suggestionSource', 'LOCAL_RULES')
                 )
 
             synced_count += 1

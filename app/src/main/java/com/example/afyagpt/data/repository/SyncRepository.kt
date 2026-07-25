@@ -1,6 +1,7 @@
 package com.example.afyagpt.data.repository
 
 import com.example.afyagpt.data.local.dao.PatientDao
+import com.example.afyagpt.data.local.dao.TriageDao
 import com.example.afyagpt.data.local.entity.PatientEntity
 import com.example.afyagpt.data.preferences.UserPreferences
 import com.example.afyagpt.util.AppConstants
@@ -10,8 +11,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.BufferedReader
-import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
@@ -27,6 +26,7 @@ import javax.inject.Singleton
 @Singleton
 class SyncRepository @Inject constructor(
     private val patientDao: PatientDao,
+    private val triageDao: TriageDao,
     private val userPreferences: UserPreferences
 ) {
     suspend fun syncOfflineData(): Result<Int> = withContext(Dispatchers.IO) {
@@ -36,6 +36,7 @@ class SyncRepository @Inject constructor(
 
             val jsonPatients = JSONArray()
             for (p in patients) {
+                val latestTriage = triageDao.getSessionsForPatientList(p.id).firstOrNull()
                 val obj = JSONObject().apply {
                     put("patientUid", p.patientUid)
                     put("fullName", p.fullName)
@@ -47,6 +48,19 @@ class SyncRepository @Inject constructor(
                     put("facilityName", p.facilityName)
                     put("county", p.county ?: "")
                     put("riskLevel", p.riskLevel)
+                    if (latestTriage != null) {
+                        val ds = listOfNotNull(
+                            if (latestTriage.unableToDrink) "Unable to drink" else null,
+                            if (latestTriage.vomitingEverything) "Vomiting" else null,
+                            if (latestTriage.convulsions) "Convulsions" else null,
+                            if (latestTriage.lethargic) "Lethargic" else null
+                        ).joinToString(", ")
+                        put("visitType", latestTriage.visitType)
+                        put("visitLocationNote", latestTriage.visitLocationNote ?: "")
+                        put("overallRisk", latestTriage.overallRisk)
+                        put("suggestionSource", latestTriage.suggestionSource)
+                        put("dangerSigns", ds)
+                    }
                 }
                 jsonPatients.put(obj)
             }
