@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
-from api.views import landing_page, stakeholder_dashboard, stakeholder_login, stakeholder_logout, web_register
+from api.views import landing_page, stakeholder_dashboard, stakeholder_login, stakeholder_logout, web_register, help_page
 
 def health_check(request):
     """Heroku deployment health check endpoint returning plain text 'ok'."""
@@ -12,6 +12,7 @@ urlpatterns = [
     path('login/', stakeholder_login, name='login'),
     path('logout/', stakeholder_logout, name='logout'),
     path('register/', web_register, name='register'),
+    path('help/', help_page, name='help_page'),
     path('dashboard/', stakeholder_dashboard, name='stakeholder_dashboard'),
     path('admin/', admin.site.urls),
     path('health/', health_check, name='health_check'),

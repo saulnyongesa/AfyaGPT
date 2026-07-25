@@ -6,6 +6,7 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from rest_framework import viewsets, status, permissions
 from rest_framework.views import APIView
@@ -257,6 +258,11 @@ def web_register(request):
             return redirect('/login/')
 
     return render(request, 'register.html')
+
+
+def help_page(request):
+    """System Help and User Documentation View."""
+    return render(request, 'help.html')
 
 
 def stakeholder_login(request):

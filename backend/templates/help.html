@@ -1,0 +1,344 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}System Help & Documentation — AfyaGPT Portal{% endblock %}
+
+{% block content %}
+<!-- Hero Header Banner -->
+<div class="bg-primary text-white py-5 shadow-sm" style="background: linear-gradient(135deg, #0D47A1 0%, #1565C0 100%);">
+    <div class="container py-3">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-warning text-dark px-3 py-2 fw-bold rounded-pill mb-2"><i class="fa-solid fa-book-bookmark me-1"></i>Official User Documentation</span>
+                <h1 class="fw-extrabold display-5 mb-2">AfyaGPT System Help & Documentation</h1>
+                <p class="fs-5 text-white-50 mb-4">Complete step-by-step guide for Health Facility Web Registration, Admin Dashboards, WHO IMCI Triage, and Offline Mobile App Sync.</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="#facility-registration" class="btn btn-light btn-sm rounded-pill fw-bold px-3 text-primary"><i class="fa-solid fa-hospital me-1"></i>Facility Registration</a>
+                    <a href="#admin-dashboard" class="btn btn-outline-light btn-sm rounded-pill fw-bold px-3"><i class="fa-solid fa-gauge me-1"></i>Admin Dashboard</a>
+                    <a href="#mobile-app" class="btn btn-outline-light btn-sm rounded-pill fw-bold px-3"><i class="fa-solid fa-mobile-screen me-1"></i>Mobile App Guide</a>
+                    <a href="#imci-triage" class="btn btn-outline-light btn-sm rounded-pill fw-bold px-3"><i class="fa-solid fa-stethoscope me-1"></i>IMCI Triage</a>
+                    <a href="#sync-offline" class="btn btn-outline-light btn-sm rounded-pill fw-bold px-3"><i class="fa-solid fa-arrows-rotate me-1"></i>Offline Sync</a>
+                    <a href="#faqs" class="btn btn-outline-light btn-sm rounded-pill fw-bold px-3"><i class="fa-solid fa-circle-question me-1"></i>FAQs</a>
+                </div>
+            </div>
+            <div class="col-lg-4 text-center d-none d-lg-block">
+                <i class="fa-solid fa-hospital-user text-white opacity-25" style="font-size: 140px;"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container py-5">
+    <div class="row g-4">
+        <!-- Sidebar Quick Navigation -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 sticky-top" style="top: 100px;">
+                <h6 class="fw-bold text-muted uppercase small mb-3"><i class="fa-solid fa-list-ul me-2"></i>Documentation Index</h6>
+                <div class="nav flex-column nav-pills gap-1">
+                    <a class="nav-link active fw-semibold" href="#facility-registration"><i class="fa-solid fa-hospital me-2"></i>1. Facility Registration</a>
+                    <a class="nav-link text-dark fw-semibold" href="#admin-dashboard"><i class="fa-solid fa-gauge me-2"></i>2. Admin Dashboard</a>
+                    <a class="nav-link text-dark fw-semibold" href="#mobile-app"><i class="fa-solid fa-mobile-screen me-2"></i>3. Mobile App Operations</a>
+                    <a class="nav-link text-dark fw-semibold" href="#imci-triage"><i class="fa-solid fa-notes-medical me-2"></i>4. WHO IMCI Triage</a>
+                    <a class="nav-link text-dark fw-semibold" href="#sync-offline"><i class="fa-solid fa-cloud-arrow-up me-2"></i>5. Sync & Offline Mode</a>
+                    <a class="nav-link text-dark fw-semibold" href="#faqs"><i class="fa-solid fa-circle-question me-2"></i>6. Frequently Asked Questions</a>
+                    <a class="nav-link text-dark fw-semibold" href="#support"><i class="fa-solid fa-headset me-2"></i>7. Technical Support</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentation Content Area -->
+        <div class="col-lg-9">
+
+            <!-- SECTION 1: Facility Registration -->
+            <section id="facility-registration" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary text-white rounded-3 p-3 fs-3"><i class="fa-solid fa-hospital"></i></div>
+                    <div>
+                        <h3 class="fw-bold text-primary m-0">1. Health Facility Web Registration</h3>
+                        <p class="text-muted small m-0">Registering your health clinic or dispensary on the AfyaGPT web portal</p>
+                    </div>
+                </div>
+                <hr class="my-3">
+
+                <h5 class="fw-bold text-dark mt-3 mb-3"><i class="fa-solid fa-sliders text-warning me-2"></i>4-Step Registration Wizard Overview</h5>
+                
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <h6 class="fw-bold text-primary"><span class="badge bg-primary me-2">Step 1</span>Facility Basics</h6>
+                            <p class="small text-muted mb-0">Enter official Facility/Clinic Name, Official Email Address (used for Admin login), and Country (default Kenya).</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <h6 class="fw-bold text-primary"><span class="badge bg-primary me-2">Step 2</span>Mandatory Location Access</h6>
+                            <p class="small text-muted mb-0">County, Sub-County, Address & Browser GPS Location Grant. Manual typing of coordinates is disabled; GPS permission is required to enable the Next button.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <h6 class="fw-bold text-primary"><span class="badge bg-primary me-2">Step 3</span>Contacts & Web Presence</h6>
+                            <p class="small text-muted mb-0">Facility Contact Phone. Official Website, Facebook, and Twitter/X URLs are explicitly marked as <strong class="text-success">(Optional)</strong>.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 h-100 bg-light">
+                            <h6 class="fw-bold text-primary"><span class="badge bg-primary me-2">Step 4</span>Security & Account Activation</h6>
+                            <p class="small text-muted mb-0">Create facility admin password. If core fields and location access are provided, the account activates instantly (<code class="text-success">is_draft = False</code>).</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info border-0 rounded-3 p-3">
+                    <h6 class="fw-bold mb-1"><i class="fa-solid fa-circle-info me-2"></i>Location Permission Requirement</h6>
+                    <p class="small mb-0">To ensure accurate mapping of health centers on the interactive Kenya GPS map, browser location permission is mandatory. Click <strong>"Grant Permission & Capture GPS"</strong> on Step 2. If browser GPS delays, click <strong>"Permission Granted? Click Here to Enable Next Button"</strong> to proceed.</p>
+                </div>
+            </section>
+
+            <!-- SECTION 2: Admin Dashboard -->
+            <section id="admin-dashboard" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary text-white rounded-3 p-3 fs-3"><i class="fa-solid fa-gauge-high"></i></div>
+                    <div>
+                        <h3 class="fw-bold text-primary m-0">2. Facility Admin & Operational Dashboard</h3>
+                        <p class="text-muted small m-0">Managing staff, triage data, and DHIS2 HMIS indicator reports</p>
+                    </div>
+                </div>
+                <hr class="my-3">
+
+                <h5 class="fw-bold text-dark mt-3 mb-3">Dashboard Navigation Categories</h5>
+                <ul class="list-group list-group-flush mb-4">
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <strong class="d-block text-primary"><i class="fa-solid fa-chart-line me-2"></i>Main Overview</strong>
+                            <span class="small text-muted">DHIS2 aligned indicators, total pediatric registrations, triage breakdown (Green/Yellow/Red), and KEPI immunization rate.</span>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <strong class="d-block text-primary"><i class="fa-solid fa-user-gear me-2"></i>User & Role Controls</strong>
+                            <span class="small text-muted">Approve pending CHW & Nurse registration requests, toggle account active status, change roles, and trigger 6-digit PIN resets.</span>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <strong class="d-block text-primary"><i class="fa-solid fa-map-location-dot me-2"></i>Clinical Operations & GPS Map</strong>
+                            <span class="small text-muted">View live interactive CHW home visit markers, registered facility roster, and export patient CSV reports.</span>
+                        </div>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                        <div>
+                            <strong class="d-block text-primary"><i class="fa-solid fa-file-excel me-2"></i>HMIS & DHIS2 Reporting</strong>
+                            <span class="small text-muted">Export Kenya Ministry of Health standardized reports (MOH-711, MOH-710, Triage CSV, Patient Registry).</span>
+                        </div>
+                    </li>
+                </ul>
+
+                <div class="alert alert-warning border-0 rounded-3 p-3 mb-0">
+                    <h6 class="fw-bold mb-1"><i class="fa-solid fa-bolt me-2"></i>Real-Time Streaming & Tab Persistence</h6>
+                    <p class="small mb-0">The web dashboard polls light delta updates every 10 seconds without refreshing the page. Refreshing your browser preserves your active tab (e.g. <code>#patients</code>, <code>#users</code>) automatically.</p>
+                </div>
+            </section>
+
+            <!-- SECTION 3: Mobile App Guide -->
+            <section id="mobile-app" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary text-white rounded-3 p-3 fs-3"><i class="fa-solid fa-mobile-screen-button"></i></div>
+                    <div>
+                        <h3 class="fw-bold text-primary m-0">3. Android Mobile Application Operations</h3>
+                        <p class="text-muted small m-0">Field guidelines for Community Health Promoters (CHPs) and Clinicians</p>
+                    </div>
+                </div>
+                <hr class="my-3">
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 bg-light h-100">
+                            <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-hospital-user me-2"></i>Pre-Login Facility Search</h6>
+                            <p class="small text-muted mb-0">App launch fetches all active facilities and caches them locally. Health workers search and select their facility during signup; County is populated automatically.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 bg-light h-100">
+                            <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-shield-halved me-2"></i>6-Boxed PIN Security</h6>
+                            <p class="small text-muted mb-0">Sign in securely using your phone number/email and a 6-digit PIN with individual boxed digit indicators and a cursor line.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 bg-light h-100">
+                            <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-cake-candles me-2"></i>Split DOB Patient Registration</h6>
+                            <p class="small text-muted mb-0">Date of Birth is entered via 3 distinct dropdowns (Year, Month, Day) to prevent format errors and accurately calculate under-5 pediatric age.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border rounded-4 p-3 bg-light h-100">
+                            <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-language me-2"></i>Bilingual Support (English & Swahili)</h6>
+                            <p class="small text-muted mb-0">Switch between English and Kiswahili in Settings for Community Health Promoters (CHPs) operating in rural Kenya units.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 4: IMCI Triage -->
+            <section id="imci-triage" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary text-white rounded-3 p-3 fs-3"><i class="fa-solid fa-stethoscope"></i></div>
+                    <div>
+                        <h3 class="fw-bold text-primary m-0">4. WHO IMCI Clinical Triage & AI Assistant</h3>
+                        <p class="text-muted small m-0">Pediatric assessment algorithms and context-aware AI decision support</p>
+                    </div>
+                </div>
+                <hr class="my-3">
+
+                <h5 class="fw-bold text-dark mt-3 mb-3">Risk Classification Engine</h5>
+                <div class="table-responsive mb-4">
+                    <table class="table table-bordered align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Risk Badge</th>
+                                <th>Classification</th>
+                                <th>Clinical Criteria & Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><span class="badge bg-danger px-3 py-2">CRITICAL / RED</span></td>
+                                <td class="fw-bold text-danger">Severe Disease / Emergency</td>
+                                <td>General Danger Signs present (Inability to drink, vomiting everything, convulsions, lethargy). Immediate referral to county hospital required.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-warning text-dark px-3 py-2">MEDIUM / YELLOW</span></td>
+                                <td class="fw-bold text-warning">Moderate Disease / Facility Care</td>
+                                <td>Fever in malaria zone, persistent cough, or moderate dehydration. Facility clinic visit & treatment protocol recommended.</td>
+                            </tr>
+                            <tr>
+                                <td><span class="badge bg-success px-3 py-2">LOW / GREEN</span></td>
+                                <td class="fw-bold text-success">Mild / Home Management</td>
+                                <td>No severe danger signs. Home care advice, fluids, and immunization tracking provided.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="p-3 bg-light border-start border-primary border-4 rounded-3">
+                    <h6 class="fw-bold text-primary mb-1"><i class="fa-solid fa-robot me-2"></i>AfyaGPT AI Assistant FAB</h6>
+                    <p class="small text-muted mb-0">Located on the Patient Details screen. Pre-loads recent patient vitals and triage history automatically into the AI context for immediate clinical decision support.</p>
+                </div>
+            </section>
+
+            <!-- SECTION 5: Sync & Offline -->
+            <section id="sync-offline" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary text-white rounded-3 p-3 fs-3"><i class="fa-solid fa-arrows-rotate"></i></div>
+                    <div>
+                        <h3 class="fw-bold text-primary m-0">5. Offline Resilience & Cloud Sync</h3>
+                        <p class="text-muted small m-0">How AfyaGPT functions seamlessly in remote locations without internet</p>
+                    </div>
+                </div>
+                <hr class="my-3">
+
+                <p class="text-muted">AfyaGPT is engineered with an <strong>Offline-First Architecture</strong>. All patient registrations, triage assessments, and vaccination records are saved locally in the device's Room SQLite database.</p>
+                
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="border p-3 rounded-3">
+                            <h6 class="fw-bold text-primary"><i class="fa-solid fa-wifi-slash me-2"></i>Offline Mode</h6>
+                            <p class="small text-muted mb-0">Full triage assessment and patient registration operate completely offline using local WHO IMCI rules.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="border p-3 rounded-3">
+                            <h6 class="fw-bold text-primary"><i class="fa-solid fa-cloud-arrow-up me-2"></i>Auto-Sync on Connectivity</h6>
+                            <p class="small text-muted mb-0">When network connection is detected, clicking <strong>"Sync Now"</strong> uploads pending offline records to the cloud and downloads facility patient updates.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 6: FAQs -->
+            <section id="faqs" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-primary text-white rounded-3 p-3 fs-3"><i class="fa-solid fa-circle-question"></i></div>
+                    <div>
+                        <h3 class="fw-bold text-primary m-0">6. Frequently Asked Questions (FAQs)</h3>
+                        <p class="text-muted small m-0">Quick answers to common system questions</p>
+                    </div>
+                </div>
+                <hr class="my-3">
+
+                <div class="accordion accordion-flush" id="faqAccordion">
+                    <div class="accordion-item border mb-2 rounded-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                Q1: How do I register a new Health Facility?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body small text-muted">
+                                Visit <a href="/register/" class="fw-bold">/register/</a> on the web portal. Complete the 4-step wizard: Basic Info, Address & Browser Location Grant, Contacts, and Admin Password. Upon completion, your facility account will activate automatically.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item border mb-2 rounded-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                Q2: Why was my facility saved as a draft?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body small text-muted">
+                                A facility is saved as a draft (<code class="text-warning">is_draft = True</code>) if mandatory core information (Facility Name, Email, County, Contact Phone, Browser GPS Location) or Password was missing during registration. Complete all required fields to activate.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item border mb-2 rounded-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Q3: Can health workers sign up without internet?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body small text-muted">
+                                Initial account registration and initial login require internet connection to verify facility credentials. Subsequent logins operate completely offline using local PIN hash verification.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item border mb-2 rounded-3">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button fw-bold collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                Q4: Who sponsors the AfyaGPT platform?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body small text-muted">
+                                AfyaGPT is sponsored by <strong>Remian Diagnostics Limited</strong> (<a href="https://remiandiagnostics.com" target="_blank" class="fw-bold">remiandiagnostics.com</a>), empowering primary healthcare diagnostic and digital triage systems across Africa.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SECTION 7: Technical Support -->
+            <section id="support" class="card border-0 shadow-sm rounded-4 p-4 p-md-5 bg-primary text-white">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="bg-white text-primary rounded-3 p-3 fs-3"><i class="fa-solid fa-headset"></i></div>
+                    <div>
+                        <h3 class="fw-bold text-white m-0">7. Need Technical Help?</h3>
+                        <p class="text-white-50 small m-0">Our clinical and technical engineering team is ready to support you.</p>
+                    </div>
+                </div>
+                <hr class="border-white opacity-25 my-3">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <p class="mb-0">Contact Remian Diagnostics Technical Support or submit inquiries directly through our system portal.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <a href="https://remiandiagnostics.com" target="_blank" class="btn btn-warning fw-bold px-4 rounded-3"><i class="fa-solid fa-arrow-up-right-from-square me-2"></i>Remian Diagnostics</a>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
