@@ -42,9 +42,10 @@ object AppModule {
         userDao: UserDao,
         preferences: UserPreferences,
         syncRepository: SyncRepository,
-        connectivityChecker: com.example.afyagpt.domain.suggestion.ConnectivityChecker
+        connectivityChecker: com.example.afyagpt.domain.suggestion.ConnectivityChecker,
+        facilityRepository: com.example.afyagpt.data.repository.FacilityRepository
     ): AuthRepository {
-        return AuthRepository(userDao, preferences, syncRepository, connectivityChecker)
+        return AuthRepository(userDao, preferences, syncRepository, connectivityChecker, facilityRepository)
     }
 
     /**

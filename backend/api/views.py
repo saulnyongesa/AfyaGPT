@@ -7,7 +7,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from rest_framework import viewsets, status
+from rest_framework import viewsets, status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
@@ -74,11 +74,103 @@ def landing_page(request):
     stakeholders = Stakeholder.objects.filter(is_active=True)
     news_articles = NewsArticle.objects.all()[:3]
 
+    facilities_qs = HealthFacility.objects.filter(is_draft=False)
+    facilities_data = []
+    for f in facilities_qs:
+        facilities_data.append({
+            'id': f.id,
+            'name': f.name,
+            'facility_type': f.facility_type,
+            'county': f.county or 'N/A',
+            'sub_county': f.sub_county or '',
+            'village': f.village or '',
+            'phone': f.contact_phone or '',
+            'lat': float(f.gps_latitude) if f.gps_latitude else -1.286389,
+            'lng': float(f.gps_longitude) if f.gps_longitude else 36.817223
+        })
+
     return render(request, 'index.html', {
         'stats': stats,
         'sections': sections,
         'stakeholders': stakeholders,
         'news_articles': news_articles,
+        'facilities': facilities_qs,
+        'facilities_json': json.dumps(facilities_data)
+    })
+
+
+def dashboard_live_stream(request):
+    """Real-time light delta streaming endpoint for dashboard updates without full page reloads."""
+    since_timestamp = request.GET.get('since')
+    facility_id = request.session.get('facility_id')
+    
+    facility = HealthFacility.objects.filter(id=facility_id).first() if facility_id else None
+    
+    query_patients = Patient.objects.all()
+    query_triage = TriageSession.objects.all()
+    query_users = UserProfile.objects.all()
+
+    if facility:
+        query_patients = query_patients.filter(facility_name=facility.name)
+        query_triage = query_triage.filter(patient__facility_name=facility.name)
+        query_users = query_users.filter(facility=facility)
+
+    if since_timestamp:
+        try:
+            from django.utils.dateparse import parse_datetime
+            dt = parse_datetime(since_timestamp)
+            if dt:
+                query_patients = query_patients.filter(created_at__gt=dt)
+                query_triage = query_triage.filter(created_at__gt=dt)
+                query_users = query_users.filter(created_at__gt=dt)
+        except Exception:
+            pass
+
+    new_patients = [
+        {
+            'id': p.id,
+            'uid': p.patient_uid,
+            'name': p.full_name,
+            'dob': p.date_of_birth.strftime('%Y-%m-%d') if p.date_of_birth else '',
+            'risk': p.risk_level,
+            'created_at': p.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+        for p in query_patients.order_by('-created_at')[:10]
+    ]
+
+    new_triage = [
+        {
+            'id': t.id,
+            'session_uid': t.session_uid,
+            'patient_name': t.patient.full_name if t.patient else 'Unknown',
+            'overall_risk': t.overall_risk,
+            'created_at': t.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+        for t in query_triage.order_by('-created_at')[:10]
+    ]
+
+    new_pending_users = [
+        {
+            'id': u.id,
+            'name': u.full_name,
+            'profession': u.profession,
+            'created_at': u.created_at.strftime('%Y-%m-%d %H:%M')
+        }
+        for u in query_users.filter(is_approved=False).order_by('-created_at')[:5]
+    ]
+
+    stats = {
+        'total_patients': Patient.objects.filter(facility_name=facility.name).count() if facility else Patient.objects.count(),
+        'total_triage': TriageSession.objects.filter(patient__facility_name=facility.name).count() if facility else TriageSession.objects.count(),
+        'pending_approvals': UserProfile.objects.filter(facility=facility, is_approved=False).count() if facility else UserProfile.objects.filter(is_approved=False).count()
+    }
+
+    return JsonResponse({
+        'server_timestamp': timezone.now().isoformat(),
+        'stats': stats,
+        'new_patients': new_patients,
+        'new_triage': new_triage,
+        'new_pending_users': new_pending_users
     })
 
 
@@ -504,8 +596,47 @@ def export_hmis_indicators_csv(request):
 # ─── REST ViewSets ─────────────────────────────────────────────────────────────
 
 class HealthFacilityViewSet(viewsets.ModelViewSet):
-    queryset = HealthFacility.objects.all()
+    queryset = HealthFacility.objects.filter(is_draft=False)
     serializer_class = HealthFacilitySerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class WhoRulesView(APIView):
+    """WHO IMCI Rules API endpoint for mobile client online rule sync."""
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        rules = [
+            {
+                "rule_id": "IMCI-RESP-01",
+                "category": "RESPIRATORY",
+                "condition": "Cough or Difficult Breathing",
+                "min_age_months": 2,
+                "max_age_months": 59,
+                "fast_breathing_cutoff": 50,
+                "danger_signs": ["Chest indrawing", "Stridor in calm child", "Unable to drink", "Convulsions"],
+                "version": "2026.1"
+            },
+            {
+                "rule_id": "IMCI-DIARRHEA-01",
+                "category": "DIARRHEA",
+                "condition": "Diarrhea Assessment",
+                "min_age_months": 2,
+                "max_age_months": 59,
+                "dehydration_signs": ["Sunken eyes", "Skin pinch goes back very slowly (>2s)", "Lethargic"],
+                "version": "2026.1"
+            },
+            {
+                "rule_id": "IMCI-FEVER-01",
+                "category": "FEVER",
+                "condition": "Fever Assessment (Malaria Risk)",
+                "min_age_months": 2,
+                "max_age_months": 59,
+                "malaria_risk_zones": ["HIGH", "MEDIUM", "LOW"],
+                "version": "2026.1"
+            }
+        ]
+        return Response({'version': '2026.1', 'rules': rules}, status=status.HTTP_200_OK)
 
 class UserProfileViewSet(viewsets.ModelViewSet):
     queryset = UserProfile.objects.all().order_by('-created_at')

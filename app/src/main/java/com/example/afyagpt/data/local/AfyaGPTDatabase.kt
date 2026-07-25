@@ -27,16 +27,17 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.afyagpt.data.local.dao.UserDao
-import com.example.afyagpt.data.local.entity.UserEntity
-
 import com.example.afyagpt.data.local.dao.ChatMessageDao
+import com.example.afyagpt.data.local.dao.FacilityDao
 import com.example.afyagpt.data.local.dao.PatientDao
 import com.example.afyagpt.data.local.dao.TriageDao
+import com.example.afyagpt.data.local.dao.UserDao
 import com.example.afyagpt.data.local.dao.VaccinationDao
 import com.example.afyagpt.data.local.entity.ChatMessageEntity
+import com.example.afyagpt.data.local.entity.FacilityEntity
 import com.example.afyagpt.data.local.entity.PatientEntity
 import com.example.afyagpt.data.local.entity.TriageSessionEntity
+import com.example.afyagpt.data.local.entity.UserEntity
 import com.example.afyagpt.data.local.entity.VaccinationEntity
 
 /**
@@ -56,9 +57,10 @@ import com.example.afyagpt.data.local.entity.VaccinationEntity
         PatientEntity::class,
         TriageSessionEntity::class,
         VaccinationEntity::class,
-        ChatMessageEntity::class
+        ChatMessageEntity::class,
+        FacilityEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class AfyaGPTDatabase : RoomDatabase() {
@@ -74,6 +76,7 @@ abstract class AfyaGPTDatabase : RoomDatabase() {
     abstract fun triageDao(): TriageDao
     abstract fun vaccinationDao(): VaccinationDao
     abstract fun chatMessageDao(): ChatMessageDao
+    abstract fun facilityDao(): FacilityDao
 
     companion object {
 

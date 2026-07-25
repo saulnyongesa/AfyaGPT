@@ -33,7 +33,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -122,14 +124,63 @@ fun RegisterPatientScreen(
                             placeholder = "e.g. Amani Kamau"
                         )
 
-                        AfyaTextField(
-                            value = state.regDob,
-                            onValueChange = { viewModel.updateRegField("dob", it) },
-                            label = "Date of Birth (YYYY-MM-DD) *",
-                            leadingIcon = Icons.Default.Cake,
-                            keyboardType = KeyboardType.Number,
-                            placeholder = "2024-05-12"
+                        // --- Date of Birth Split Fields (Year, Month, Day) ---
+                        var dobYear by remember { mutableStateOf("2024") }
+                        var dobMonth by remember { mutableStateOf("01") }
+                        var dobDay by remember { mutableStateOf("01") }
+
+                        fun updateCombinedDob(y: String, m: String, d: String) {
+                            val formattedMonth = m.padStart(2, '0')
+                            val formattedDay = d.padStart(2, '0')
+                            viewModel.updateRegField("dob", "$y-$formattedMonth-$formattedDay")
+                        }
+
+                        Text(
+                            text = "Date of Birth *",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            AfyaTextField(
+                                value = dobYear,
+                                onValueChange = {
+                                    if (it.length <= 4 && it.all { c -> c.isDigit() }) {
+                                        dobYear = it
+                                        updateCombinedDob(dobYear, dobMonth, dobDay)
+                                    }
+                                },
+                                label = "Year (YYYY)",
+                                keyboardType = KeyboardType.Number,
+                                modifier = Modifier.weight(1.2f)
+                            )
+                            AfyaTextField(
+                                value = dobMonth,
+                                onValueChange = {
+                                    if (it.length <= 2 && it.all { c -> c.isDigit() }) {
+                                        dobMonth = it
+                                        updateCombinedDob(dobYear, dobMonth, dobDay)
+                                    }
+                                },
+                                label = "Month (MM)",
+                                keyboardType = KeyboardType.Number,
+                                modifier = Modifier.weight(1f)
+                            )
+                            AfyaTextField(
+                                value = dobDay,
+                                onValueChange = {
+                                    if (it.length <= 2 && it.all { c -> c.isDigit() }) {
+                                        dobDay = it
+                                        updateCombinedDob(dobYear, dobMonth, dobDay)
+                                    }
+                                },
+                                label = "Day (DD)",
+                                keyboardType = KeyboardType.Number,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
 
                         Text(
                             text = "Sex *",

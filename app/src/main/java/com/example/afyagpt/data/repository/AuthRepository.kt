@@ -30,7 +30,8 @@ class AuthRepository @Inject constructor(
     private val userDao: UserDao,
     private val preferences: UserPreferences,
     private val syncRepository: SyncRepository,
-    private val connectivityChecker: ConnectivityChecker
+    private val connectivityChecker: ConnectivityChecker,
+    private val facilityRepository: FacilityRepository
 ) {
 
     suspend fun registerUser(
@@ -98,8 +99,9 @@ class AuthRepository @Inject constructor(
                 val user = User.fromEntity(localUser)
                 preferences.saveSession(userId = user.id, theme = user.themePreference)
 
-                // Background Sync on Login: Download latest facility patients and sync settings
+                // Requirement 3: Delete all unselected facilities from Room DB and keep only active facility
                 try {
+                    facilityRepository.pruneUnselectedFacilities(user.facilityName)
                     syncRepository.syncOfflineData()
                 } catch (ignored: Exception) {}
 

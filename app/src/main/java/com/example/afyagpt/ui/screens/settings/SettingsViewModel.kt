@@ -23,6 +23,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val user: User? = null,
     val currentTheme: AppTheme = AppTheme.BLUE_YELLOW,
+    val currentLanguage: String = "English",
     val isLoggedOut: Boolean = false
 )
 
@@ -42,11 +43,11 @@ class SettingsViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             val user = authRepository.getCurrentUser()
-            userPreferences.getActiveTheme().collect { themeStr ->
+            userPreferences.getActiveLanguage().collect { lang ->
                 _uiState.update { 
                     it.copy(
                         user = user,
-                        currentTheme = AppTheme.valueOf(themeStr)
+                        currentLanguage = if (lang == "KISWAHILI") "Kiswahili" else "English"
                     ) 
                 }
             }
@@ -56,6 +57,14 @@ class SettingsViewModel @Inject constructor(
     fun updateTheme(theme: AppTheme) {
         viewModelScope.launch {
             userPreferences.updateTheme(theme.name)
+        }
+    }
+
+    fun updateLanguage(displayLang: String) {
+        viewModelScope.launch {
+            val code = if (displayLang == "Kiswahili") "KISWAHILI" else "ENGLISH"
+            userPreferences.updateLanguage(code)
+            _uiState.update { it.copy(currentLanguage = displayLang) }
         }
     }
 

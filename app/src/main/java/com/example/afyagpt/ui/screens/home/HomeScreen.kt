@@ -135,24 +135,6 @@ fun HomeScreen(
                     currentRoute = AppRoute.Home.route,
                     onNavigate = onNavigate
                 )
-            },
-            floatingActionButton = {
-                ExtendedFloatingActionButton(
-                    onClick = {
-                        aiChatViewModel.initChat(0, "General Clinical Inquiry", "")
-                        showAiChatSheet = true
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AutoAwesome,
-                        contentDescription = "AI Assistant",
-                        tint = MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.padding(end = 8.dp)
-                    )
-                    Text("AfyaGPT AI Assistant")
-                }
             }
         ) { innerPadding ->
 

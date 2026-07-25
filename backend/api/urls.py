@@ -6,8 +6,8 @@ from .views import (
     ClinicalFeedbackViewSet, AuditLogViewSet, NewsArticleViewSet,
     ContactInquiryViewSet, AnnouncementViewSet, AppSettingViewSet,
     LandingSectionViewSet, StakeholderViewSet,
-    MobileAuthCheckView, MobileLoginView, MobileRegisterView, BatchSyncView,
-    export_patients_csv, export_triage_csv, export_hmis_indicators_csv
+    MobileAuthCheckView, MobileLoginView, MobileRegisterView, BatchSyncView, WhoRulesView,
+    export_patients_csv, export_triage_csv, export_hmis_indicators_csv, dashboard_live_stream
 )
 
 router = DefaultRouter()
@@ -31,6 +31,8 @@ urlpatterns = [
     path('auth/register/', MobileRegisterView.as_view(), name='auth_register'),
     path('auth/check/', MobileAuthCheckView.as_view(), name='auth_check'),
     path('sync/', BatchSyncView.as_view(), name='batch_sync'),
+    path('rules/', WhoRulesView.as_view(), name='who_rules'),
+    path('dashboard/live-stream/', dashboard_live_stream, name='dashboard_live_stream'),
     path('export/patients/csv/', export_patients_csv, name='export_patients_csv'),
     path('export/triage/csv/', export_triage_csv, name='export_triage_csv'),
     path('export/hmis/csv/', export_hmis_indicators_csv, name='export_hmis_csv'),

@@ -10,8 +10,10 @@ import com.example.afyagpt.util.ValidationUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -62,8 +64,22 @@ data class LoginUiState(
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val facilityRepository: com.example.afyagpt.data.repository.FacilityRepository
 ) : ViewModel() {
+
+    val cachedFacilities: StateFlow<List<com.example.afyagpt.data.local.entity.FacilityEntity>> =
+        facilityRepository.getFacilities().stateIn(
+            scope = viewModelScope,
+            started = kotlinx.coroutines.flow.SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    init {
+        viewModelScope.launch {
+            facilityRepository.fetchAndCacheFacilities()
+        }
+    }
 
     // Lists for dropdowns
     val kenyaCounties = listOf(
@@ -88,6 +104,17 @@ class AuthViewModel @Inject constructor(
     fun onSignUpProfessionalNumberChange(value: String) = _signUpState.update { it.copy(professionalNumber = value) }
     fun onSignUpFacilityChange(value: String) = _signUpState.update { it.copy(facilityName = value, facilityError = null) }
     fun onSignUpCountyChange(value: String) = _signUpState.update { it.copy(county = value, countyError = null) }
+
+    fun selectFacility(facilityName: String, county: String) {
+        _signUpState.update {
+            it.copy(
+                facilityName = facilityName,
+                county = county,
+                facilityError = null,
+                countyError = null
+            )
+        }
+    }
     
     fun onSignUpPinChange(value: String) {
         if (value.length <= 6 && value.all { it.isDigit() }) {

@@ -180,25 +180,34 @@ fun SignUpScreen(
                 imeAction = ImeAction.Next
             )
             
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            AfyaTextField(
-                value = state.facilityName,
-                onValueChange = viewModel::onSignUpFacilityChange,
-                label = "Facility / Health Centre Name",
-                errorMessage = state.facilityError,
-                keyboardType = KeyboardType.Text,
-                imeAction = ImeAction.Next
-            )
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
+            // --- Facility Selection with Search & Auto-County ---
+            val facilities by viewModel.cachedFacilities.collectAsState()
+            val facilityNames = facilities.map { "${it.name} (${it.county})" }
+            val selectedDisplay = if (state.facilityName.isNotBlank()) "${state.facilityName} (${state.county})" else ""
+
             AfyaDropdownField(
-                label = "County",
-                value = state.county,
-                options = viewModel.kenyaCounties,
-                onValueSelected = viewModel::onSignUpCountyChange,
-                errorMessage = state.countyError
+                label = "Select Health Facility *",
+                value = selectedDisplay,
+                options = if (facilityNames.isNotEmpty()) facilityNames else listOf("Default Health Center (Nairobi)", "Kilifi County Hospital (Kilifi)", "Kisumu East Dispensary (Kisumu)"),
+                onValueSelected = { selected ->
+                    val matched = facilities.find { "${it.name} (${it.county})" == selected }
+                    if (matched != null) {
+                        viewModel.selectFacility(matched.name, matched.county)
+                    } else {
+                        val nameOnly = selected.substringBefore(" (").trim()
+                        val countyOnly = selected.substringAfter("(").substringBefore(")").trim().ifBlank { "Nairobi" }
+                        viewModel.selectFacility(nameOnly, countyOnly)
+                    }
+                },
+                errorMessage = state.facilityError
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "Facility not listed? Ask your facility admin to register at remiandiagnostics.com / AfyaGPT Web",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 4.dp)
             )
 
             Spacer(modifier = Modifier.height(24.dp))

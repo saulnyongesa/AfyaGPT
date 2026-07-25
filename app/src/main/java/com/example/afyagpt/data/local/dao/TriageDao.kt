@@ -40,6 +40,9 @@ interface TriageDao {
     @Query("SELECT * FROM triage_sessions WHERE patient_id = :patientId ORDER BY created_at DESC")
     suspend fun getSessionsForPatientList(patientId: Int): List<TriageSessionEntity>
 
+    @Query("SELECT * FROM triage_sessions WHERE patient_id = :patientId AND substr(created_at, 1, 10) = :dateStr LIMIT 1")
+    suspend fun findSameDaySession(patientId: Int, dateStr: String): TriageSessionEntity?
+
     /**
      * Retrieves the most recent triage sessions across all patients.
      * @param limit The maximum number of sessions to return.

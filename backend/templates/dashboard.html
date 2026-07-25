@@ -62,19 +62,29 @@
                 </div>
 
                 <ul class="nav flex-column sidebar-menu mt-2">
+                    <li class="nav-header text-warning text-uppercase px-3 pt-2 pb-1 fw-bold" style="font-size:0.7rem; letter-spacing:1px;">Main Overview</li>
                     <li class="nav-item"><a class="nav-link active" href="#overview" data-bs-toggle="tab"><i class="fa-solid fa-chart-pie me-2"></i> Overview Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="tab"><i class="fa-solid fa-users-gear me-2"></i> User & Roles</a></li>
+
+                    <li class="nav-header text-warning text-uppercase px-3 pt-3 pb-1 fw-bold" style="font-size:0.7rem; letter-spacing:1px;">Clinical Operations</li>
                     <li class="nav-item"><a class="nav-link" href="#patients" data-bs-toggle="tab"><i class="fa-solid fa-hospital-user me-2"></i> Patient Data Oversight</a></li>
                     <li class="nav-item"><a class="nav-link" href="#facilities" data-bs-toggle="tab"><i class="fa-solid fa-building-circle-check me-2"></i> Facilities & CHWs</a></li>
                     <li class="nav-item"><a class="nav-link" href="#reporting" data-bs-toggle="tab"><i class="fa-solid fa-file-invoice me-2"></i> HMIS / DHIS2 Reports</a></li>
+
+                    <li class="nav-header text-warning text-uppercase px-3 pt-3 pb-1 fw-bold" style="font-size:0.7rem; letter-spacing:1px;">User & Role Controls</li>
+                    <li class="nav-item"><a class="nav-link" href="#users" data-bs-toggle="tab"><i class="fa-solid fa-users-gear me-2"></i> User & Roles</a></li>
+
+                    <li class="nav-header text-warning text-uppercase px-3 pt-3 pb-1 fw-bold" style="font-size:0.7rem; letter-spacing:1px;">Decision Support & CMS</li>
                     <li class="nav-item"><a class="nav-link" href="#ai-oversight" data-bs-toggle="tab"><i class="fa-solid fa-brain me-2"></i> AI & Rules Oversight</a></li>
                     {% if is_superuser %}
                     <li class="nav-item"><a class="nav-link" href="#cms" data-bs-toggle="tab"><i class="fa-solid fa-pen-to-square me-2"></i> CMS Landing Editor</a></li>
                     {% endif %}
                     <li class="nav-item"><a class="nav-link" href="#announcements" data-bs-toggle="tab"><i class="fa-solid fa-bullhorn me-2"></i> Broadcast Alerts</a></li>
+
+                    <li class="nav-header text-warning text-uppercase px-3 pt-3 pb-1 fw-bold" style="font-size:0.7rem; letter-spacing:1px;">System & Security</li>
                     <li class="nav-item"><a class="nav-link" href="#settings" data-bs-toggle="tab"><i class="fa-solid fa-sliders me-2"></i> System Health</a></li>
                     <li class="nav-item"><a class="nav-link" href="#audit" data-bs-toggle="tab"><i class="fa-solid fa-shield-halved me-2"></i> Audit & Compliance</a></li>
-                    <li class="nav-item mt-3"><a class="nav-link text-danger" href="/logout/"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</a></li>
+
+                    <li class="nav-item mt-3"><a class="nav-link text-danger fw-bold" href="/logout/"><i class="fa-solid fa-right-from-bracket me-2"></i> Logout</a></li>
                 </ul>
             </div>
 
@@ -124,13 +134,13 @@
                             <div class="col-md-3">
                                 <div class="card card-stat p-3 bg-white border-start border-primary border-4">
                                     <div class="text-muted small">Total Children Registered</div>
-                                    <div class="fs-2 fw-bold text-primary">{{ total_patients }}</div>
+                                    <div id="stat_total_patients" class="fs-2 fw-bold text-primary">{{ total_patients }}</div>
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <div class="card card-stat p-3 bg-white border-start border-success border-4">
                                     <div class="text-muted small">Triage Assessments</div>
-                                    <div class="fs-2 fw-bold text-success">{{ total_triage }}</div>
+                                    <div id="stat_total_triage" class="fs-2 fw-bold text-success">{{ total_triage }}</div>
                                 </div>
                             </div>
                             <div class="col-md-3">
@@ -313,7 +323,7 @@
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
-                                    <tbody>
+                                    <tbody id="recent_patients_tbody">
                                         {% for p in patients %}
                                         <tr>
                                             <td><code>{{ p.patient_uid }}</code></td>
@@ -841,7 +851,78 @@
             document.getElementById('preview_date').innerText = date;
             var modal = new bootstrap.Modal(document.getElementById('triagePreviewModal'));
             modal.show();
+        // ─── URL Tab State Persistence on Refresh ─────────────────────────────────
+        document.addEventListener("DOMContentLoaded", function () {
+            // Restore active tab from URL hash on page refresh
+            var currentHash = window.location.hash;
+            if (currentHash) {
+                var targetTab = document.querySelector('.sidebar-menu a[href="' + currentHash + '"]');
+                if (targetTab) {
+                    var bsTab = new bootstrap.Tab(targetTab);
+                    bsTab.show();
+                }
+            }
+
+            // Sync active tab to URL hash when user clicks sidebar nav links
+            var tabLinks = document.querySelectorAll('.sidebar-menu a[data-bs-toggle="tab"]');
+            tabLinks.forEach(function (link) {
+                link.addEventListener('shown.bs.tab', function (e) {
+                    var hash = e.target.getAttribute('href');
+                    if (history.pushState) {
+                        history.pushState(null, null, hash);
+                    } else {
+                        location.hash = hash;
+                    }
+                });
+            });
+        });
+
+        // ─── Real-Time Live Streaming / Light Delta Polling ─────────────────────
+        var lastStreamTimestamp = new Date().toISOString();
+
+        function pollLiveStream() {
+            fetch('/api/dashboard/live-stream/?since=' + encodeURIComponent(lastStreamTimestamp))
+                .then(function (res) { return res.json(); })
+                .then(function (data) {
+                    if (data.server_timestamp) {
+                        lastStreamTimestamp = data.server_timestamp;
+                    }
+                    // Update stat counters
+                    if (data.stats) {
+                        var pEl = document.getElementById('stat_total_patients');
+                        if (pEl && data.stats.total_patients !== undefined) pEl.innerText = data.stats.total_patients;
+
+                        var tEl = document.getElementById('stat_total_triage');
+                        if (tEl && data.stats.total_triage !== undefined) tEl.innerText = data.stats.total_triage;
+                    }
+                    // Prepend new patients to registry table dynamically
+                    if (data.new_patients && data.new_patients.length > 0) {
+                        var tbody = document.getElementById('recent_patients_tbody');
+                        if (tbody) {
+                            data.new_patients.forEach(function (p) {
+                                if (!document.getElementById('patient_row_' + p.id)) {
+                                    var rowHtml = `
+                                        <tr id="patient_row_${p.id}" class="table-success">
+                                            <td><code>${p.uid}</code></td>
+                                            <td class="fw-bold">${p.name}</td>
+                                            <td>${p.dob}</td>
+                                            <td>-</td>
+                                            <td>Active Facility</td>
+                                            <td><span class="badge badge-risk-${p.risk.toLowerCase()}">${p.risk}</span></td>
+                                            <td><span class="badge bg-success">Just Added</span></td>
+                                        </tr>
+                                    `;
+                                    tbody.insertAdjacentHTML('afterbegin', rowHtml);
+                                }
+                            });
+                        }
+                    }
+                })
+                .catch(function (err) { console.log("Live stream delta poll:", err); });
         }
+
+        // Poll every 10 seconds efficiently to save bandwidth & traffic
+        setInterval(pollLiveStream, 10000);
     </script>
 </body>
 </html>

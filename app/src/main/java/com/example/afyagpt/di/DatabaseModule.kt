@@ -98,4 +98,10 @@ object DatabaseModule {
     fun provideChatMessageDao(db: AfyaGPTDatabase): com.example.afyagpt.data.local.dao.ChatMessageDao {
         return db.chatMessageDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideFacilityDao(db: AfyaGPTDatabase): com.example.afyagpt.data.local.dao.FacilityDao {
+        return db.facilityDao()
+    }
 }

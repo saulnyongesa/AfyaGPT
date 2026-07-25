@@ -50,6 +50,9 @@ import com.example.afyagpt.ui.screens.triage.AiChatSheet
 import com.example.afyagpt.ui.screens.triage.AiChatViewModel
 import com.example.afyagpt.util.DateTimeUtils
 
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+
 @Composable
 fun PatientDetailScreen(
     patientId: Int,
@@ -88,6 +91,27 @@ fun PatientDetailScreen(
                 currentRoute = AppRoute.Records.route,
                 onNavigate = onNavigate
             )
+        },
+        floatingActionButton = {
+            if (patient != null) {
+                ExtendedFloatingActionButton(
+                    onClick = {
+                        val summaryText = "Patient ${patient.fullName} (UID: ${patient.patientUid}, DOB: ${patient.dateOfBirth}, Risk: ${patient.riskLevel}). Facility: ${patient.facilityName}."
+                        aiChatViewModel.initChat(patient.id, patient.fullName, summaryText)
+                        showAiChatSheet = true
+                    },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.AutoAwesome,
+                        contentDescription = "AI Assistant",
+                        tint = MaterialTheme.colorScheme.secondary,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text("AfyaGPT AI Assistant")
+                }
+            }
         }
     ) { paddingValues ->
         if (patient == null) {

@@ -86,6 +86,17 @@ fun SettingsScreen(
                 }
             )
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            AfyaDropdownField(
+                label = "App Language (CHP Mode)",
+                value = state.currentLanguage,
+                options = listOf("English", "Kiswahili"),
+                onValueSelected = { selected ->
+                    viewModel.updateLanguage(selected)
+                }
+            )
+
             Spacer(modifier = Modifier.weight(1f))
 
             AfyaSecondaryButton(

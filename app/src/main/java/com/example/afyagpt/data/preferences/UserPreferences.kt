@@ -79,6 +79,32 @@ class UserPreferences @Inject constructor(
 
         /** Number of local records awaiting upload to the server. */
         val UNSYNCED_COUNT = intPreferencesKey("unsynced_count")
+
+        /** App language preference ("ENGLISH" or "KISWAHILI"). */
+        val ACTIVE_LANGUAGE = stringPreferencesKey("active_language")
+
+        /** Cached WHO IMCI rules JSON string downloaded from server. */
+        val WHO_RULES_JSON = stringPreferencesKey("who_rules_json")
+    }
+
+    fun getActiveLanguage(): Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.ACTIVE_LANGUAGE] ?: "ENGLISH"
+    }
+
+    suspend fun updateLanguage(language: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.ACTIVE_LANGUAGE] = language
+        }
+    }
+
+    fun getWhoRulesJson(): Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[Keys.WHO_RULES_JSON] ?: ""
+    }
+
+    suspend fun updateWhoRules(rulesJson: String) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.WHO_RULES_JSON] = rulesJson
+        }
     }
 
     // ── Write operations ───────────────────────────────────────────────────────

@@ -1,0 +1,46 @@
+{% load static %}
+<footer class="footer-afya py-5 text-white-50" style="background-color: #0A192F;">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <img src="{% static 'images/app_logo.png' %}" alt="AfyaGPT Icon" style="height:36px; width:36px; border-radius:8px; background:white; padding:2px;">
+                    <span class="fs-4 fw-bold text-white">Afya<span class="text-warning">GPT</span></span>
+                </div>
+                <p class="small">Offline-first Health Intelligence Platform for Community Health Workers, Nurses, and Health Facilities in Kenya & Sub-Saharan Africa based on WHO IMCI guidelines.</p>
+                <div class="d-flex align-items-center gap-2 mt-3">
+                    <img src="{% static 'images/remian_logo.png' %}" alt="Remian Diagnostics Logo" style="height:32px; width:32px; border-radius:50%; background:white; padding:2px;">
+                    <span class="small">Sponsored by <a href="https://remiandiagnostics.com" target="_blank" class="text-warning text-decoration-none fw-bold">Remian Diagnostics Limited</a></span>
+                </div>
+            </div>
+            <div class="col-lg-2 col-6">
+                <h6 class="text-white fw-bold mb-3">Navigation</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><a href="/#about" class="text-white-50 text-decoration-none">About Us</a></li>
+                    <li class="mb-2"><a href="/#features" class="text-white-50 text-decoration-none">Features</a></li>
+                    <li class="mb-2"><a href="/#sponsor" class="text-white-50 text-decoration-none">Official Sponsor</a></li>
+                    <li class="mb-2"><a href="/#team" class="text-white-50 text-decoration-none">Stakeholders</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3 col-6">
+                <h6 class="text-white fw-bold mb-3">Health Portals</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2"><a href="/login/" class="text-white-50 text-decoration-none">Facility Login</a></li>
+                    <li class="mb-2"><a href="/register/" class="text-white-50 text-decoration-none">Register Health Facility</a></li>
+                    <li class="mb-2"><a href="/dashboard/" class="text-white-50 text-decoration-none">Stakeholder Portal</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-3">
+                <h6 class="text-white fw-bold mb-3">Headquarters</h6>
+                <p class="small mb-1"><i class="fa-solid fa-location-dot me-2 text-warning"></i>Nairobi, Kenya</p>
+                <p class="small mb-1"><i class="fa-solid fa-envelope me-2 text-warning"></i>info@afyagpt.org</p>
+                <p class="small"><i class="fa-solid fa-globe me-2 text-warning"></i>remiandiagnostics.com</p>
+            </div>
+        </div>
+        <hr class="my-4 border-secondary">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center small text-white-50">
+            <div>© 2026 AfyaGPT Health Systems. All rights reserved.</div>
+            <div>Built for Kenya MoH & Sub-Saharan Africa Health Infrastructure.</div>
+        </div>
+    </div>
+</footer>
