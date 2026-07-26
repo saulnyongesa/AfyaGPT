@@ -58,7 +58,8 @@
 
                 <div class="px-3 pb-3 text-white-50 small border-bottom border-secondary">
                     Logged in: <strong class="text-white">{{ user.username }}</strong><br>
-                    Role: <span class="badge bg-warning text-dark">{% if is_superuser %}SUPERADMIN{% else %}STAKEHOLDER{% endif %}</span>
+                    Role: <span class="badge bg-warning text-dark">{% if is_superuser %}SUPERADMIN{% else %}FACILITY ADMIN{% endif %}</span>
+                    <span class="d-block text-warning small fw-semibold mt-1"><i class="fa-solid fa-hospital me-1"></i>{{ active_facility_name }}</span>
                 </div>
 
                 <ul class="nav flex-column sidebar-menu mt-2">
@@ -242,11 +243,9 @@
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <div>
                                 <h3 class="fw-bold m-0">User & Role Management</h3>
-                                <p class="text-muted small m-0">Staff accounts, approval workflows, and role permissions</p>
+                                <p class="text-muted small m-0">Staff accounts and approval workflows assigned under <strong>{{ active_facility_name }}</strong></p>
                             </div>
-                            {% if is_superuser %}
                             <button class="btn btn-primary rounded-3" data-bs-toggle="modal" data-bs-target="#createUserModal"><i class="fa-solid fa-user-plus me-2"></i>Add Staff Member</button>
-                            {% endif %}
                         </div>
 
                         <div class="card border-0 shadow-sm rounded-4 p-4">
@@ -679,7 +678,7 @@
                                 <option value="CHW">Community Health Worker</option>
                             </select>
                         </div>
-                        <div class="mb-3"><label class="form-label small fw-bold">Assigned Facility Name</label><input type="text" name="facility_name" class="form-control" value="Nairobi Central Health Center"></div>
+                        <div class="mb-3"><label class="form-label small fw-bold">Assigned Facility Name</label><input type="text" name="facility_name" class="form-control" value="{{ active_facility_name }}"></div>
                         <div class="mb-3"><label class="form-label small fw-bold">County</label><input type="text" name="county" class="form-control" value="Nairobi"></div>
                     </div>
                     <div class="modal-footer border-0">

@@ -3,7 +3,7 @@ import json
 from datetime import timedelta
 from django.utils import timezone
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render, redirect, get_object_or_404
+from django.db import models
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -301,6 +301,19 @@ def stakeholder_dashboard(request):
     """
     user = request.user
     user_groups = list(user.groups.values_list('name', flat=True))
+    admin_profile = UserProfile.objects.filter(email=user.email).first()
+    user_facility = admin_profile.facility if admin_profile else None
+    user_facility_name = admin_profile.facility_name if admin_profile else (user_facility.name if user_facility else '')
+
+    def can_manage_target_user(target_profile):
+        if user.is_superuser:
+            return True
+        if admin_profile and target_profile:
+            if user_facility and target_profile.facility == user_facility:
+                return True
+            if user_facility_name and target_profile.facility_name and target_profile.facility_name.strip().lower() == user_facility_name.strip().lower():
+                return True
+        return False
 
     # Timeframe filter query parameter
     time_filter = request.GET.get('timeframe', 'month')
@@ -316,46 +329,53 @@ def stakeholder_dashboard(request):
 
     if request.method == 'POST':
         action = request.POST.get('action')
-        admin_profile = UserProfile.objects.filter(email=user.email).first()
 
-        # 1. User Management Actions
-        if action == 'approve_user' and user.is_superuser:
+        # 1. User Management Actions (Facility Admins can manage staff in their facility)
+        if action == 'approve_user':
             user_id = request.POST.get('user_id')
             profile = UserProfile.objects.filter(id=user_id).first()
-            if profile:
+            if profile and can_manage_target_user(profile):
                 profile.is_approved = not profile.is_approved
                 profile.save()
                 log_audit_event(admin_profile, 'USER_APPROVAL_TOGGLED', 'UserProfile', profile.id, f"Approved status set to {profile.is_approved}", request)
                 messages.success(request, f"Health Worker {profile.full_name} status set to {'Approved' if profile.is_approved else 'Pending'}.")
+            else:
+                messages.error(request, "Permission denied: You can only manage staff members under your registered facility.")
 
-        elif action == 'toggle_active_user' and user.is_superuser:
+        elif action == 'toggle_active_user':
             user_id = request.POST.get('user_id')
             profile = UserProfile.objects.filter(id=user_id).first()
-            if profile:
+            if profile and can_manage_target_user(profile):
                 profile.is_active = not profile.is_active
                 profile.save()
                 log_audit_event(admin_profile, 'USER_ACTIVE_TOGGLED', 'UserProfile', profile.id, f"Is_active set to {profile.is_active}", request)
                 messages.success(request, f"Account for {profile.full_name} is now {'Active' if profile.is_active else 'Deactivated'}.")
+            else:
+                messages.error(request, "Permission denied: You can only manage staff members under your registered facility.")
 
-        elif action == 'change_user_role' and user.is_superuser:
+        elif action == 'change_user_role':
             user_id = request.POST.get('user_id')
             new_role = request.POST.get('role', 'CHW')
             profile = UserProfile.objects.filter(id=user_id).first()
-            if profile:
+            if profile and can_manage_target_user(profile):
                 profile.role = new_role
                 profile.save()
                 log_audit_event(admin_profile, 'USER_ROLE_CHANGED', 'UserProfile', profile.id, f"Role changed to {new_role}", request)
                 messages.success(request, f"Role for {profile.full_name} updated to {new_role}.")
+            else:
+                messages.error(request, "Permission denied: You can only manage staff members under your registered facility.")
 
-        elif action == 'reset_user_pin' and user.is_superuser:
+        elif action == 'reset_user_pin':
             user_id = request.POST.get('user_id')
             new_pin = request.POST.get('new_pin', '123456').strip()
             profile = UserProfile.objects.filter(id=user_id).first()
-            if profile:
+            if profile and can_manage_target_user(profile):
                 profile.pin_hash = new_pin
                 profile.save()
                 log_audit_event(admin_profile, 'USER_PIN_RESET', 'UserProfile', profile.id, 'Admin triggered PIN reset', request)
                 messages.success(request, f"PIN for {profile.full_name} successfully reset to {new_pin}.")
+            else:
+                messages.error(request, "Permission denied: You can only manage staff members under your registered facility.")
 
         # 2. Facility Actions
         elif action == 'create_facility':
@@ -516,9 +536,29 @@ def stakeholder_dashboard(request):
 
         return redirect('/dashboard/')
 
-    # Query Datasets with Time Filters
-    patient_qs = Patient.objects.all()
-    triage_qs = TriageSession.objects.all()
+    # Query Datasets with RBAC Scoping & Time Filters
+    if user.is_superuser:
+        users_qs = UserProfile.objects.all().order_by('-created_at')
+        patient_qs = Patient.objects.all()
+        triage_qs = TriageSession.objects.all()
+        facilities_qs = HealthFacility.objects.all()
+        audit_logs_qs = AuditLog.objects.all()[:30]
+    else:
+        # Scope strictly to Facility Admin's facility ONLY
+        if user_facility:
+            users_qs = UserProfile.objects.filter(models.Q(facility=user_facility) | models.Q(facility_name__iexact=user_facility.name)).order_by('-created_at')
+            facilities_qs = HealthFacility.objects.filter(id=user_facility.id)
+        elif user_facility_name:
+            users_qs = UserProfile.objects.filter(facility_name__iexact=user_facility_name).order_by('-created_at')
+            facilities_qs = HealthFacility.objects.filter(name__iexact=user_facility_name)
+        else:
+            users_qs = UserProfile.objects.none()
+            facilities_qs = HealthFacility.objects.none()
+
+        patient_qs = Patient.objects.filter(facility_name__iexact=user_facility_name) if user_facility_name else Patient.objects.none()
+        triage_qs = TriageSession.objects.filter(patient__facility_name__iexact=user_facility_name) if user_facility_name else TriageSession.objects.none()
+        audit_logs_qs = AuditLog.objects.filter(user_profile=admin_profile)[:30] if admin_profile else AuditLog.objects.none()
+
     if start_date:
         patient_qs = patient_qs.filter(created_at__gte=start_date)
         triage_qs = triage_qs.filter(created_at__gte=start_date)
@@ -563,6 +603,7 @@ def stakeholder_dashboard(request):
     context = {
         'is_superuser': user.is_superuser,
         'user_groups': user_groups,
+        'active_facility_name': user_facility_name or (user_facility.name if user_facility else 'My Health Facility'),
         'timeframe': time_filter,
         'total_patients': total_patients_count,
         'total_triage': total_triage_count,
@@ -580,14 +621,13 @@ def stakeholder_dashboard(request):
 
         'patients': patient_qs.order_by('-created_at')[:25],
         'triages': triage_qs.order_by('-created_at')[:25],
-        'high_risk_patients': Patient.objects.filter(risk_level__in=['HIGH', 'CRITICAL']).order_by('-updated_at')[:15],
-        'users': UserProfile.objects.all().order_by('-created_at'),
-        'pending_users': UserProfile.objects.filter(is_approved=False).count(),
-        'facilities': HealthFacility.objects.all(),
+        'high_risk_patients': patient_qs.filter(risk_level__in=['HIGH', 'CRITICAL']).order_by('-updated_at')[:15],
+        'users': users_qs,
+        'pending_users': users_qs.filter(is_approved=False).count(),
+        'facilities': facilities_qs,
         'announcements': Announcement.objects.filter(is_active=True)[:10],
         'landing_sections': LandingSection.objects.all(),
-        'stakeholders': Stakeholder.objects.all(),
-        'audit_logs': AuditLog.objects.all()[:30],
+        'audit_logs': audit_logs_qs,
         'feedbacks': ClinicalFeedback.objects.all().order_by('-created_at')[:20],
         'settings': AppSetting.objects.all(),
     }
