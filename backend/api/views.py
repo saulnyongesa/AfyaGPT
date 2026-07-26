@@ -76,13 +76,13 @@ def landing_page(request):
     stakeholders = Stakeholder.objects.filter(is_active=True)
     news_articles = NewsArticle.objects.all()[:3]
 
-    facilities_qs = HealthFacility.objects.filter(is_draft=False)
+    facilities_qs = HealthFacility.objects.all()
     facilities_data = []
     for f in facilities_qs:
         facilities_data.append({
             'id': f.id,
             'name': f.name,
-            'facility_type': f.facility_type,
+            'facility_type': getattr(f, 'facility_type', 'Health Facility'),
             'county': f.county or 'N/A',
             'sub_county': f.sub_county or '',
             'village': f.village or '',
@@ -707,7 +707,7 @@ def export_hmis_indicators_csv(request):
 # ─── REST ViewSets ─────────────────────────────────────────────────────────────
 
 class HealthFacilityViewSet(viewsets.ModelViewSet):
-    queryset = HealthFacility.objects.filter(is_draft=False)
+    queryset = HealthFacility.objects.all().order_by('name')
     serializer_class = HealthFacilitySerializer
     permission_classes = [permissions.AllowAny]
 

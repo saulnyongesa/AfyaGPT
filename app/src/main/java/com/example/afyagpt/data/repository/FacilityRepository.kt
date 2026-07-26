@@ -26,24 +26,35 @@ class FacilityRepository @Inject constructor(
             val url = URL(AppConstants.BACKEND_BASE_URL + "facilities/")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
-                connectTimeout = 6000
-                readTimeout = 6000
+                connectTimeout = 8000
+                readTimeout = 8000
             }
             if (conn.responseCode in 200..299) {
-                val responseText = conn.inputStream.bufferedReader().use { it.readText() }
-                val jsonArray = JSONArray(responseText)
+                val responseText = conn.inputStream.bufferedReader().use { it.readText() }.trim()
+                val jsonArray = if (responseText.startsWith("{")) {
+                    val jsonObj = org.json.JSONObject(responseText)
+                    jsonObj.optJSONArray("results") ?: JSONArray()
+                } else if (responseText.startsWith("[")) {
+                    JSONArray(responseText)
+                } else {
+                    JSONArray()
+                }
+
                 val list = mutableListOf<FacilityEntity>()
                 for (i in 0 until jsonArray.length()) {
                     val obj = jsonArray.getJSONObject(i)
-                    list.add(
-                        FacilityEntity(
-                            id = obj.optInt("id", i + 1),
-                            name = obj.optString("name", "Facility"),
-                            county = obj.optString("county", "Nairobi"),
-                            subCounty = obj.optString("sub_county").takeIf { it.isNotBlank() },
-                            contactPhone = obj.optString("contact_phone").takeIf { it.isNotBlank() }
+                    val facilityName = obj.optString("name", "").trim()
+                    if (facilityName.isNotBlank()) {
+                        list.add(
+                            FacilityEntity(
+                                id = obj.optInt("id", i + 1),
+                                name = facilityName,
+                                county = obj.optString("county", "Nairobi").ifBlank { "Nairobi" },
+                                subCounty = obj.optString("sub_county").takeIf { !it.isNull_or_blank() },
+                                contactPhone = obj.optString("contact_phone").takeIf { !it.isNull_or_blank() }
+                            )
                         )
-                    )
+                    }
                 }
                 if (list.isNotEmpty()) {
                     facilityDao.insertAll(list)
@@ -53,9 +64,12 @@ class FacilityRepository @Inject constructor(
                 false
             }
         } catch (e: Exception) {
+            e.printStackTrace()
             false
         }
     }
+
+    private fun String?.isNull_or_blank(): Boolean = this == null || this.isBlank() || this == "null"
 
     suspend fun pruneUnselectedFacilities(activeFacilityName: String) = withContext(Dispatchers.IO) {
         facilityDao.pruneOtherFacilities(activeFacilityName)
