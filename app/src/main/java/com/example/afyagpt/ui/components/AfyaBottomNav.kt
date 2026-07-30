@@ -48,8 +48,16 @@ fun AfyaBottomNav(
                 .fillMaxWidth()
                 .clip(MaterialTheme.shapes.extraLarge)
         ) {
+            val currentLanguage = com.example.afyagpt.util.LocalAppLanguage.current
             bottomNavItems.forEach { item ->
                 val isSelected = currentRoute == item.route
+                val localizedLabel = when {
+                    item.route.contains("home") -> com.example.afyagpt.util.AppStrings.get("nav_home", currentLanguage)
+                    item.route.contains("triage") -> com.example.afyagpt.util.AppStrings.get("nav_triage", currentLanguage)
+                    item.route.contains("library") -> com.example.afyagpt.util.AppStrings.get("nav_library", currentLanguage)
+                    item.route.contains("records") -> com.example.afyagpt.util.AppStrings.get("nav_patients", currentLanguage)
+                    else -> item.label
+                }
                 
                 NavigationBarItem(
                     selected = isSelected,
@@ -62,13 +70,17 @@ fun AfyaBottomNav(
                     icon = {
                         Icon(
                             imageVector = if (isSelected) item.selectedIcon else item.icon,
-                            contentDescription = item.label
+                            contentDescription = localizedLabel,
+                            tint = if (isSelected) Color(0xFF1B365D) else Color.White
                         )
                     },
                     label = {
                         Text(
-                            text = item.label,
-                            style = MaterialTheme.typography.labelSmall
+                            text = localizedLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isSelected) Color(0xFFFDB813) else Color.White,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     },
                     colors = NavigationBarItemDefaults.colors(

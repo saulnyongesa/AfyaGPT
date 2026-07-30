@@ -80,11 +80,24 @@ class UserPreferences @Inject constructor(
         /** Number of local records awaiting upload to the server. */
         val UNSYNCED_COUNT = intPreferencesKey("unsynced_count")
 
-        /** App language preference ("ENGLISH" or "KISWAHILI"). */
+        /** App language preference ("ENGLISH", "SWAHILI", "FRENCH"). */
         val ACTIVE_LANGUAGE = stringPreferencesKey("active_language")
+
+        /** Whether initial onboarding setup (language & theme) has been completed. */
+        val IS_SETUP_COMPLETED = booleanPreferencesKey("is_setup_completed")
 
         /** Cached WHO IMCI rules JSON string downloaded from server. */
         val WHO_RULES_JSON = stringPreferencesKey("who_rules_json")
+    }
+
+    fun isSetupCompleted(): Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[Keys.IS_SETUP_COMPLETED] ?: false
+    }
+
+    suspend fun setSetupCompleted(completed: Boolean = true) {
+        context.dataStore.edit { prefs ->
+            prefs[Keys.IS_SETUP_COMPLETED] = completed
+        }
     }
 
     fun getActiveLanguage(): Flow<String> = context.dataStore.data.map { prefs ->

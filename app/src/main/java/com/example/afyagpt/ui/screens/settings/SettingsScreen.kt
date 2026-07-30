@@ -71,14 +71,14 @@ fun SettingsScreen(
             }
 
             Text(
-                text = "Preferences",
+                text = com.example.afyagpt.util.AppStrings.get("appearance", state.currentLanguage),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.primary
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             AfyaDropdownField(
-                label = "App Theme",
+                label = com.example.afyagpt.util.AppStrings.get("change_theme", state.currentLanguage),
                 value = state.currentTheme.name.replace("_", " "),
                 options = AppTheme.values().map { it.name.replace("_", " ") },
                 onValueSelected = { selected ->
@@ -88,19 +88,25 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            val languageOptions = com.example.afyagpt.util.AppLanguage.values().map { "${it.displayName} ${it.flagEmoji}" }
+            val currentLangDisplay = "${state.currentLanguage.displayName} ${state.currentLanguage.flagEmoji}"
+
             AfyaDropdownField(
-                label = "App Language (CHP Mode)",
-                value = state.currentLanguage,
-                options = listOf("English", "Kiswahili"),
+                label = com.example.afyagpt.util.AppStrings.get("change_language", state.currentLanguage),
+                value = currentLangDisplay,
+                options = languageOptions,
                 onValueSelected = { selected ->
-                    viewModel.updateLanguage(selected)
+                    val matchedLang = com.example.afyagpt.util.AppLanguage.values().find {
+                        "${it.displayName} ${it.flagEmoji}" == selected
+                    } ?: com.example.afyagpt.util.AppLanguage.ENGLISH
+                    viewModel.updateLanguage(matchedLang)
                 }
             )
 
             Spacer(modifier = Modifier.weight(1f))
 
             AfyaSecondaryButton(
-                text = "Logout",
+                text = com.example.afyagpt.util.AppStrings.get("logout", state.currentLanguage),
                 onClick = viewModel::logout
             )
         }

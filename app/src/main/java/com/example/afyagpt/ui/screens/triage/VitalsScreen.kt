@@ -61,21 +61,23 @@ fun VitalsScreen(
                 AfyaTextField(
                     value = state.temperatureC,
                     onValueChange = { viewModel.updateVitals("temperatureC", it) },
-                    label = "Temperature (°C)",
+                    label = "Temperature (°C) — Axillary / Digital Thermometer",
                     modifier = Modifier.fillMaxWidth()
                 )
                 val tempFloat = state.temperatureC.toFloatOrNull()
                 if (tempFloat != null) {
+                    val fahrenheit = (tempFloat * 9f / 5f) + 32f
+                    val fahrenheitStr = String.format("%.1f", fahrenheit)
                     val (tempLabel, tempColor) = when {
-                        tempFloat < 35.5 -> "Hypothermia (LOW)" to Color(0xFF1976D2)
-                        tempFloat in 35.5..37.5 -> "Normal" to Color(0xFF2E7D32) // SemanticSuccess
-                        tempFloat > 37.5 && tempFloat <= 38.5 -> "Low Fever" to Color(0xFFF57C00) // SemanticWarning
-                        else -> "High Fever" to Color(0xFFD32F2F) // SemanticError
+                        tempFloat < 35.5f -> "Hypothermia (< 35.5 °C / General Danger Sign)" to Color(0xFFD32F2F)
+                        tempFloat in 35.5f..37.4f -> "Normal Body Temperature (35.5 °C – 37.4 °C)" to Color(0xFF2E7D32)
+                        tempFloat in 37.5f..38.4f -> "Fever / Moderate (37.5 °C – 38.4 °C)" to Color(0xFFF57C00)
+                        else -> "High Fever (≥ 38.5 °C / High Risk)" to Color(0xFFD32F2F)
                     }
                     Text(
-                        text = tempLabel,
+                        text = "$tempLabel — Equivalent: $fahrenheitStr °F",
                         color = tempColor,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }

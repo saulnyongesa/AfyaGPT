@@ -8,11 +8,12 @@ package com.example.afyagpt.ui.navigation
  */
 
 sealed class AppRoute(val route: String) {
-    // ── Auth ────────────────────────────────────────────────────────────────
-    object Splash      : AppRoute("splash")
-    object Login       : AppRoute("auth/login")
-    object SignUp      : AppRoute("auth/signup")
-    object ForgotPin   : AppRoute("auth/forgot-pin")
+    // ── Auth & Onboarding ───────────────────────────────────────────────────
+    object Splash       : AppRoute("splash")
+    object InitialSetup : AppRoute("onboarding/setup")
+    object Login        : AppRoute("auth/login")
+    object SignUp       : AppRoute("auth/signup")
+    object ForgotPin    : AppRoute("auth/forgot-pin")
 
     // ── Main Tabs ───────────────────────────────────────────────────────────
     object Home        : AppRoute("home")
@@ -20,10 +21,13 @@ sealed class AppRoute(val route: String) {
     object Library     : AppRoute("library")
     object Records     : AppRoute("records")
 
-    // ── Secondary Screens ───────────────────────────────────────────────────
-    object Settings    : AppRoute("settings")
-    object Profile     : AppRoute("profile")
-    object Search      : AppRoute("search")
+    // ── Secondary & AI Feature Screens ──────────────────────────────────────
+    object Settings           : AppRoute("settings")
+    object Profile            : AppRoute("profile")
+    object Search             : AppRoute("search")
+    object ClimateDashboard   : AppRoute("climate/dashboard")
+    object EmergencyMode      : AppRoute("emergency/mode")
+    object VoiceConsultation  : AppRoute("voice/consultation")
 
     // ── Triage Flow (internal step-by-step screens) ─────────────────────────
     object TriageStart        : AppRoute("triage/start")

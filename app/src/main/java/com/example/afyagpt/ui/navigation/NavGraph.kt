@@ -68,6 +68,7 @@ fun AfyaNavGraph(
      * true  = logged in → skip auth
      */
     val isLoggedIn by userPreferences.isLoggedIn().collectAsState(initial = null)
+    val isSetupCompleted by userPreferences.isSetupCompleted().collectAsState(initial = null)
 
     NavHost(
         navController = navController,
@@ -77,7 +78,13 @@ fun AfyaNavGraph(
         // ── Splash ──────────────────────────────────────────────────────────
         composable(AppRoute.Splash.route) {
             SplashScreen(
+                isSetupCompleted = isSetupCompleted,
                 isLoggedIn = isLoggedIn,
+                onNavigateToSetup = {
+                    navController.navigate(AppRoute.InitialSetup.route) {
+                        popUpTo(AppRoute.Splash.route) { inclusive = true }
+                    }
+                },
                 onNavigateToHome = {
                     navController.navigate(AppRoute.Home.route) {
                         popUpTo(AppRoute.Splash.route) { inclusive = true }
@@ -86,6 +93,25 @@ fun AfyaNavGraph(
                 onNavigateToLogin = {
                     navController.navigate(AppRoute.Login.route) {
                         popUpTo(AppRoute.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // ── Initial Setup (Language & Theme Onboarding) ─────────────────────
+        composable(AppRoute.InitialSetup.route) {
+            val onboardingViewModel: com.example.afyagpt.ui.screens.onboarding.OnboardingViewModel = hiltViewModel()
+            com.example.afyagpt.ui.screens.onboarding.OnboardingSetupScreen(
+                viewModel = onboardingViewModel,
+                onCompleteSetup = {
+                    if (isLoggedIn == true) {
+                        navController.navigate(AppRoute.Home.route) {
+                            popUpTo(AppRoute.InitialSetup.route) { inclusive = true }
+                        }
+                    } else {
+                        navController.navigate(AppRoute.Login.route) {
+                            popUpTo(AppRoute.InitialSetup.route) { inclusive = true }
+                        }
                     }
                 }
             )
@@ -159,6 +185,29 @@ fun AfyaNavGraph(
                         popUpTo(0) { inclusive = true }
                     }
                 }
+            )
+        }
+
+        // ── Climate Risk Engine Dashboard ────────────────────────────────────
+        composable(AppRoute.ClimateDashboard.route) {
+            com.example.afyagpt.ui.screens.climate.ClimateDashboardScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Emergency Mode Triage ───────────────────────────────────────────
+        composable(AppRoute.EmergencyMode.route) {
+            com.example.afyagpt.ui.screens.emergency.EmergencyModeScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        // ── Voice AI Consultation ───────────────────────────────────────────
+        composable(AppRoute.VoiceConsultation.route) {
+            val voiceViewModel: com.example.afyagpt.ui.screens.voice.VoiceConsultationViewModel = hiltViewModel()
+            com.example.afyagpt.ui.screens.voice.VoiceConsultationScreen(
+                viewModel = voiceViewModel,
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

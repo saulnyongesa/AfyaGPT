@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -14,14 +15,15 @@ import com.example.afyagpt.data.preferences.UserPreferences
 import com.example.afyagpt.domain.model.AppTheme
 import com.example.afyagpt.ui.navigation.AfyaNavGraph
 import com.example.afyagpt.ui.theme.AfyaGPTTheme
+import com.example.afyagpt.util.AppLanguage
+import com.example.afyagpt.util.LocalAppLanguage
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 /**
  * MainActivity.kt — Single-Activity Entry Point
  *
- * Hosts the entire Compose navigation graph with full edge-to-edge support
- * and safe window insets padding across status and navigation bars.
+ * Hosts the entire Compose navigation graph with dynamic language & theme re-composition support.
  */
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -39,15 +41,21 @@ class MainActivity : ComponentActivity() {
         setContent {
             val activeThemeStr by userPreferences.getActiveTheme()
                 .collectAsState(initial = AppTheme.BLUE_YELLOW.name)
+            val activeLangStr by userPreferences.getActiveLanguage()
+                .collectAsState(initial = AppLanguage.ENGLISH.name)
+
             val appTheme = try {
                 AppTheme.valueOf(activeThemeStr)
             } catch (e: Exception) {
                 AppTheme.BLUE_YELLOW
             }
+            val appLanguage = AppLanguage.fromCode(activeLangStr)
 
-            AfyaGPTTheme(appTheme = appTheme) {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    AfyaNavGraph(userPreferences = userPreferences)
+            CompositionLocalProvider(LocalAppLanguage provides appLanguage) {
+                AfyaGPTTheme(appTheme = appTheme) {
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        AfyaNavGraph(userPreferences = userPreferences)
+                    }
                 }
             }
         }

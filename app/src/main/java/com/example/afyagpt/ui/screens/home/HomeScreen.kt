@@ -27,9 +27,14 @@ import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.LocalHospital
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.MedicalServices
+import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Divider
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
@@ -40,8 +45,10 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -56,6 +63,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.example.afyagpt.data.local.entity.PatientEntity
@@ -71,6 +80,8 @@ import com.example.afyagpt.ui.components.toRiskLevel
 import com.example.afyagpt.ui.navigation.AppRoute
 import com.example.afyagpt.ui.screens.triage.AiChatSheet
 import com.example.afyagpt.ui.screens.triage.AiChatViewModel
+import com.example.afyagpt.util.AppStrings.get
+import com.example.afyagpt.util.LocalAppLanguage
 import com.example.afyagpt.util.DateTimeUtils
 import kotlinx.coroutines.launch
 
@@ -86,6 +97,7 @@ fun HomeScreen(
     onLogout: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
+    val currentLanguage = LocalAppLanguage.current
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     var showAiChatSheet by remember { mutableStateOf(false) }
@@ -159,7 +171,7 @@ fun HomeScreen(
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Overview Card
+                // Welcome overview card
                 item {
                     AfyaCard(
                         modifier = Modifier.fillMaxWidth(),
@@ -167,20 +179,21 @@ fun HomeScreen(
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = "Daily Clinical Overview",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MaterialTheme.colorScheme.primary
+                                text = get("daily_overview", currentLanguage),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Facility: ${user.facilityName} · County: ${user.county}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                text = "${get("facility", currentLanguage)}: ${user.facilityName} · ${get("county", currentLanguage)}: ${user.county}",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium
                             )
                             Text(
-                                text = "Logged in as ${user.fullName} (${user.profession})",
-                                style = MaterialTheme.typography.bodySmall,
+                                text = "${get("logged_in_as", currentLanguage)} ${user.fullName} (${user.profession})",
                                 color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodySmall,
                                 modifier = Modifier.padding(top = 4.dp)
                             )
                         }
@@ -200,52 +213,118 @@ fun HomeScreen(
                     }
                 }
 
-                // Quick Stats
+                // TODAY'S CLIMATE RISK WIDGET & CHILD HEALTH AI BADGE
                 item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    Surface(
+                        modifier = Modifier.fillMaxWidth().clickable { onNavigate(AppRoute.ClimateDashboard.route) },
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.3f))
                     ) {
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            icon = Icons.Default.Group,
-                            value = state.recentPatients.size.toString(),
-                            label = "Recorded Patients"
-                        )
-                        StatCard(
-                            modifier = Modifier.weight(1f),
-                            icon = Icons.Default.LocalHospital,
-                            value = state.pendingFollowUps.toString(),
-                            label = "Pending Follow-ups"
-                        )
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(text = "👶", fontSize = 20.sp)
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "CHILD HEALTH AI",
+                                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.ExtraBold),
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                                Text(
+                                    text = "${get("today_climate_risk", currentLanguage)} >",
+                                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(10.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(text = "🌡️ 29.4°C", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                                Text(text = "🌊 Flood Risk: High", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFFD32F2F))
+                                Text(text = "💨 AQI 68", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                                Text(text = "🦟 Malaria: High", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = Color(0xFFD32F2F))
+                            }
+                        }
                     }
                 }
 
-                // Quick Action Cards
+                // RESPONSIVE QUICK ACTION GRID MATCHING MANAGER BLUEPRINT
                 item {
-                    AfyaSectionCard(title = "Clinical Actions") {
-                        Row(
+                    AfyaSectionCard(title = get("quick_actions", currentLanguage)) {
+                        Column(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            QuickActionItem(
-                                icon = Icons.Default.MedicalServices,
-                                label = "Start Triage",
-                                onClick = { onNavigate(AppRoute.Triage.route) }
-                            )
-                            QuickActionItem(
-                                icon = Icons.Default.AssignmentInd,
-                                label = "Patient Records",
-                                onClick = { onNavigate(AppRoute.Records.route) }
-                            )
-                            QuickActionItem(
-                                icon = Icons.Default.AutoAwesome,
-                                label = "AI Assistant",
-                                onClick = {
-                                    aiChatViewModel.initChat(0, "Clinical Support", "")
-                                    showAiChatSheet = true
-                                }
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.MedicalServices,
+                                    label = get("nav_triage", currentLanguage),
+                                    onClick = { onNavigate(AppRoute.TriageStart.route) }
+                                )
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Phone,
+                                    label = get("voice_consultation", currentLanguage),
+                                    onClick = { onNavigate(AppRoute.VoiceConsultation.route) }
+                                )
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Warning,
+                                    label = get("climate_dashboard", currentLanguage),
+                                    onClick = { onNavigate(AppRoute.ClimateDashboard.route) }
+                                )
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.MenuBook,
+                                    label = get("nav_library", currentLanguage),
+                                    onClick = { onNavigate(AppRoute.Library.route) }
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.LocalHospital,
+                                    label = get("emergency_mode", currentLanguage),
+                                    onClick = { onNavigate(AppRoute.EmergencyMode.route) }
+                                )
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.AssignmentInd,
+                                    label = get("nav_patients", currentLanguage),
+                                    onClick = { onNavigate(AppRoute.PatientList.route) }
+                                )
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.Settings,
+                                    label = get("nav_settings", currentLanguage),
+                                    onClick = { onNavigate(AppRoute.Settings.route) }
+                                )
+                                QuickActionItem(
+                                    modifier = Modifier.weight(1f),
+                                    icon = Icons.Default.AutoAwesome,
+                                    label = "AI Assistant",
+                                    onClick = {
+                                        aiChatViewModel.initChat(0, "Clinical Support", "")
+                                        showAiChatSheet = true
+                                    }
+                                )
+                            }
                         }
                     }
                 }
@@ -258,12 +337,12 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Recent Patients (${state.recentPatients.size})",
+                            text = "${get("recent_patients", currentLanguage)} (${state.recentPatients.size})",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MaterialTheme.colorScheme.primary
                         )
                         Text(
-                            text = "View All",
+                            text = get("view_all", currentLanguage),
                             style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.clickable { onNavigate(AppRoute.Records.route) }
@@ -292,34 +371,23 @@ fun HomeScreen(
                     }
                 }
 
-                // Facility & Health Ministry Announcements Section (At the very bottom of Home Screen)
+                // ONLINE DIRECTIVES & MINISTRY ANNOUNCEMENTS
                 item {
-                    AfyaSectionCard(title = "Ministry & Facility Directives") {
+                    AfyaSectionCard(title = get("online_directives", currentLanguage)) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            if (state.announcements.isNotEmpty()) {
-                                state.announcements.forEach { ann ->
-                                    val bType = if (ann.priority == "URGENT") BannerType.DANGER else BannerType.INFO
-                                    AfyaAlertBanner(
-                                        title = ann.title,
-                                        message = ann.message,
-                                        type = bType
-                                    )
-                                }
-                            } else {
-                                AfyaAlertBanner(
-                                    title = "Malaria Outbreak Alert (High Priority)",
-                                    message = "High incidence reported in endemic sub-counties. Perform blood RDT for all pediatric fever presentations.",
-                                    type = BannerType.DANGER
-                                )
-                                AfyaAlertBanner(
-                                    title = "KEPI Vaccine Supply Update",
-                                    message = "Rotavirus vaccine batch #9420 and BCG stock re-supplied at Sub-County Central Depot.",
-                                    type = BannerType.INFO
-                                )
-                            }
+                            AfyaAlertBanner(
+                                title = get("directive_malaria_title", currentLanguage),
+                                message = get("directive_malaria_msg", currentLanguage),
+                                type = BannerType.DANGER
+                            )
+                            AfyaAlertBanner(
+                                title = get("directive_kepi_title", currentLanguage),
+                                message = get("directive_kepi_msg", currentLanguage),
+                                type = BannerType.INFO
+                            )
                         }
                     }
                 }
@@ -443,34 +511,48 @@ private fun StatCard(
 private fun QuickActionItem(
     icon: ImageVector,
     label: String,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .clip(MaterialTheme.shapes.medium)
-            .clickable(onClick = onClick)
-            .padding(12.dp)
+    Surface(
+        modifier = modifier
+            .height(96.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primaryContainer),
-            contentAlignment = Alignment.Center
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 6.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = label,
-                tint = MaterialTheme.colorScheme.primary
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primaryContainer),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                fontSize = 10.5.sp,
+                lineHeight = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
-        Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Medium
-        )
     }
 }
 
@@ -527,16 +609,18 @@ private fun AppDrawer(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        val currentLanguage = LocalAppLanguage.current
+
         NavigationDrawerItem(
             icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-            label = { Text("My Profile") },
+            label = { Text(get("profile", currentLanguage)) },
             selected = false,
             onClick = onNavigateToProfile,
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
         )
         NavigationDrawerItem(
             icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
-            label = { Text("Settings") },
+            label = { Text(get("nav_settings", currentLanguage)) },
             selected = false,
             onClick = onNavigateToSettings,
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
@@ -546,7 +630,7 @@ private fun AppDrawer(
 
         NavigationDrawerItem(
             icon = { Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Logout", tint = MaterialTheme.colorScheme.error) },
-            label = { Text("Logout", color = MaterialTheme.colorScheme.error) },
+            label = { Text(get("logout", currentLanguage), color = MaterialTheme.colorScheme.error) },
             selected = false,
             onClick = onLogout,
             modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)

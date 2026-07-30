@@ -37,6 +37,9 @@ import com.example.afyagpt.ui.components.BannerType
  * Errors are surfaced via a small AfyaDialog, not a large banner.
  */
 
+import com.example.afyagpt.util.AppStrings.get
+import com.example.afyagpt.util.LocalAppLanguage
+
 @Composable
 fun LoginScreen(
     viewModel: AuthViewModel,
@@ -45,6 +48,7 @@ fun LoginScreen(
     onNavigateToForgotPin: () -> Unit
 ) {
     val state by viewModel.loginState.collectAsState()
+    val currentLanguage = LocalAppLanguage.current
 
     LaunchedEffect(state.isSuccess) {
         if (state.isSuccess) onNavigateToHome()
@@ -70,13 +74,13 @@ fun LoginScreen(
     ) {
         // Header
         Text(
-            text = "Welcome Back",
+            text = get("welcome_back", currentLanguage),
             style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
             color = MaterialTheme.colorScheme.primary
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Login to continue managing your patients.",
+            text = get("login_subtitle", currentLanguage),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -126,7 +130,7 @@ fun LoginScreen(
         AfyaTextField(
             value = state.identifier,
             onValueChange = viewModel::onLoginIdentifierChange,
-            label = "Phone Number or Email",
+            label = get("phone_or_email", currentLanguage),
             keyboardType = KeyboardType.Email,
             imeAction = ImeAction.Next,
             enabled = !state.isLoading && !state.isLockedOut
@@ -137,7 +141,7 @@ fun LoginScreen(
         AfyaPinField(
             pin = state.pin,
             onPinChange = viewModel::onLoginPinChange,
-            label = "6-Digit PIN",
+            label = get("pin_6_digit", currentLanguage),
             showPin = state.showPin,
             onShowPinToggle = viewModel::toggleLoginShowPin
         )
@@ -146,7 +150,7 @@ fun LoginScreen(
         // Forgot PIN
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             Text(
-                text = "Forgot PIN?",
+                text = get("forgot_pin", currentLanguage),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.clickable(enabled = !state.isLoading && !state.isLockedOut) {
@@ -158,7 +162,7 @@ fun LoginScreen(
 
         // Login button
         AfyaPrimaryButton(
-            text = if (state.isLockedOut) "Locked (${state.lockoutSecondsRemaining}s)" else "Login",
+            text = if (state.isLockedOut) get("locked_with_timer", currentLanguage).replace("{}", state.lockoutSecondsRemaining.toString()) else get("login_btn", currentLanguage),
             onClick = viewModel::submitLogin,
             isLoading = state.isLoading,
             enabled = !state.isLockedOut
@@ -172,12 +176,12 @@ fun LoginScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Don't have an account?",
+                text = get("dont_have_account", currentLanguage),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
-                text = " Sign Up",
+                text = get("sign_up", currentLanguage),
                 style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.clickable(enabled = !state.isLoading) { onNavigateToSignUp() }

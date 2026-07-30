@@ -113,8 +113,11 @@ object IMCIClassifier {
         daysWithFever: Int,
         malariaRiskZone: String
     ): IMCIClassification? {
-        if (!hasFever) return null
-        if (stiffNeck || (measlesRash && daysWithFever > 3)) return IMCIClassification.SEVERE_FEBRILE_DISEASE
+        val isFeverPresent = hasFever || (temperatureC != null && temperatureC >= 37.5f)
+        val isHypothermia = (temperatureC != null && temperatureC < 35.5f)
+
+        if (!isFeverPresent && !isHypothermia) return null
+        if (stiffNeck || isHypothermia || (measlesRash && daysWithFever > 3)) return IMCIClassification.SEVERE_FEBRILE_DISEASE
         if (rdtResult == "POSITIVE") return IMCIClassification.MALARIA
         return IMCIClassification.FEVER_NO_MALARIA
     }

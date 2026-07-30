@@ -46,6 +46,9 @@ import com.example.afyagpt.ui.components.BannerType
  * Collects required information to create a new CHW or clinician profile.
  */
 
+import com.example.afyagpt.util.AppStrings.get
+import com.example.afyagpt.util.LocalAppLanguage
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SignUpScreen(
@@ -54,6 +57,7 @@ fun SignUpScreen(
     onNavigateToHome: () -> Unit
 ) {
     val state by viewModel.signUpState.collectAsState()
+    val currentLanguage = LocalAppLanguage.current
     val scrollState = rememberScrollState()
 
     LaunchedEffect(state.isSuccess) {
@@ -65,7 +69,7 @@ fun SignUpScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Create Account") },
+                title = { Text(get("create_account", currentLanguage)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
@@ -87,12 +91,12 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(8.dp))
             
             Text(
-                text = "Join AfyaGPT",
+                text = get("create_account", currentLanguage),
                 style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
                 color = MaterialTheme.colorScheme.primary
             )
             Text(
-                text = "Health Intelligence for Every Community",
+                text = get("signup_subtitle", currentLanguage),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -125,7 +129,7 @@ fun SignUpScreen(
             AfyaTextField(
                 value = state.fullName,
                 onValueChange = viewModel::onSignUpFullNameChange,
-                label = "Full Name",
+                label = get("full_name", currentLanguage),
                 errorMessage = state.fullNameError,
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
@@ -136,7 +140,7 @@ fun SignUpScreen(
             AfyaTextField(
                 value = state.phone,
                 onValueChange = viewModel::onSignUpPhoneChange,
-                label = "Phone Number (07xx...)",
+                label = get("phone_number", currentLanguage),
                 errorMessage = state.phoneError,
                 keyboardType = KeyboardType.Phone,
                 imeAction = ImeAction.Next
@@ -147,7 +151,7 @@ fun SignUpScreen(
             AfyaTextField(
                 value = state.email,
                 onValueChange = viewModel::onSignUpEmailChange,
-                label = "Email Address (Optional)",
+                label = get("email_optional", currentLanguage),
                 errorMessage = state.emailError,
                 keyboardType = KeyboardType.Email,
                 imeAction = ImeAction.Next
@@ -163,7 +167,7 @@ fun SignUpScreen(
 
             // --- Professional Info ---
             AfyaDropdownField(
-                label = "Profession",
+                label = get("profession", currentLanguage),
                 value = state.profession,
                 options = viewModel.professions,
                 onValueSelected = viewModel::onSignUpProfessionChange,
@@ -175,7 +179,7 @@ fun SignUpScreen(
             AfyaTextField(
                 value = state.professionalNumber,
                 onValueChange = viewModel::onSignUpProfessionalNumberChange,
-                label = "Registration/License Number (Optional)",
+                label = get("reg_number", currentLanguage),
                 keyboardType = KeyboardType.Text,
                 imeAction = ImeAction.Next
             )
@@ -224,7 +228,7 @@ fun SignUpScreen(
             AfyaPinField(
                 pin = state.pin,
                 onPinChange = viewModel::onSignUpPinChange,
-                label = "Create 6-Digit PIN",
+                label = get("create_pin", currentLanguage),
                 errorMessage = state.pinError,
                 showPin = state.showPin,
                 onShowPinToggle = viewModel::toggleShowPin
@@ -235,7 +239,7 @@ fun SignUpScreen(
             AfyaPinField(
                 pin = state.confirmPin,
                 onPinChange = viewModel::onSignUpConfirmPinChange,
-                label = "Confirm 6-Digit PIN",
+                label = get("confirm_pin", currentLanguage),
                 errorMessage = state.confirmPinError,
                 showPin = state.showConfirmPin,
                 onShowPinToggle = viewModel::toggleShowConfirmPin
@@ -244,7 +248,7 @@ fun SignUpScreen(
             Spacer(modifier = Modifier.height(32.dp))
             
             AfyaPrimaryButton(
-                text = "Create Account",
+                text = get("create_account", currentLanguage),
                 onClick = viewModel::submitSignUp,
                 isLoading = state.isLoading
             )

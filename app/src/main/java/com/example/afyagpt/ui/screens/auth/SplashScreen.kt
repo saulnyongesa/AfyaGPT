@@ -32,14 +32,16 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun SplashScreen(
+    isSetupCompleted: Boolean?,
     isLoggedIn: Boolean?,
+    onNavigateToSetup: () -> Unit,
     onNavigateToHome: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
     val scale = remember { Animatable(0.6f) }
     val alpha = remember { Animatable(0f) }
 
-    LaunchedEffect(isLoggedIn) {
+    LaunchedEffect(isSetupCompleted, isLoggedIn) {
         scale.animateTo(
             targetValue = 1f,
             animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
@@ -49,8 +51,14 @@ fun SplashScreen(
             animationSpec = tween(durationMillis = 400)
         )
         delay(1200)
-        if (isLoggedIn != null) {
-            if (isLoggedIn) onNavigateToHome() else onNavigateToLogin()
+        if (isSetupCompleted != null && isLoggedIn != null) {
+            if (!isSetupCompleted) {
+                onNavigateToSetup()
+            } else if (isLoggedIn) {
+                onNavigateToHome()
+            } else {
+                onNavigateToLogin()
+            }
         }
     }
 

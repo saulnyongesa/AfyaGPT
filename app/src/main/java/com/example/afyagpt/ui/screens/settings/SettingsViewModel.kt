@@ -23,7 +23,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val user: User? = null,
     val currentTheme: AppTheme = AppTheme.BLUE_YELLOW,
-    val currentLanguage: String = "English",
+    val currentLanguage: com.example.afyagpt.util.AppLanguage = com.example.afyagpt.util.AppLanguage.ENGLISH,
     val isLoggedOut: Boolean = false
 )
 
@@ -43,11 +43,12 @@ class SettingsViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             val user = authRepository.getCurrentUser()
-            userPreferences.getActiveLanguage().collect { lang ->
+            userPreferences.getActiveLanguage().collect { langStr ->
+                val appLang = com.example.afyagpt.util.AppLanguage.fromCode(langStr)
                 _uiState.update { 
                     it.copy(
                         user = user,
-                        currentLanguage = if (lang == "KISWAHILI") "Kiswahili" else "English"
+                        currentLanguage = appLang
                     ) 
                 }
             }
@@ -60,11 +61,10 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun updateLanguage(displayLang: String) {
+    fun updateLanguage(language: com.example.afyagpt.util.AppLanguage) {
         viewModelScope.launch {
-            val code = if (displayLang == "Kiswahili") "KISWAHILI" else "ENGLISH"
-            userPreferences.updateLanguage(code)
-            _uiState.update { it.copy(currentLanguage = displayLang) }
+            userPreferences.updateLanguage(language.name)
+            _uiState.update { it.copy(currentLanguage = language) }
         }
     }
 
