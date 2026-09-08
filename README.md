@@ -1,7 +1,7 @@
 # AfyaGPT
 
 AfyaGPT is an offline-first clinical decision-support application for Community Health Workers, Nurses, and Clinical Officers in Kenya and Sub-Saharan Africa.
-NB: You can download our Android app APK file and install it on your device using the link: https://github.com/saulnyongesa/AfyaGPT/releases/download/v1.0.1/app-debug.apk
+NB: You can download our prototype Android application APK file and install it on your device using the link: https://github.com/saulnyongesa/AfyaGPT/releases/download/v1.0.1/app-debug.apk
 
 The app follows the World Health Organization Integrated Management of Childhood Illness guidelines and Kenya Ministry of Health protocols. It allows frontline health workers to triage pediatric patients, screen for general danger signs, track routine immunizations, and access clinical guidance, even in clinics with no network connectivity.
 
