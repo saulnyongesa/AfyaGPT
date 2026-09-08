@@ -1,6 +1,7 @@
 # AfyaGPT
 
 AfyaGPT is an offline-first clinical decision-support application for Community Health Workers, Nurses, and Clinical Officers in Kenya and Sub-Saharan Africa.
+NB: You can download our Android app APK file and install it on your device using the link: https://github.com/saulnyongesa/AfyaGPT/releases/download/v1.0.1/app-debug.apk
 
 The app follows the World Health Organization Integrated Management of Childhood Illness guidelines and Kenya Ministry of Health protocols. It allows frontline health workers to triage pediatric patients, screen for general danger signs, track routine immunizations, and access clinical guidance, even in clinics with no network connectivity.
 
@@ -9,8 +10,8 @@ The app follows the World Health Organization Integrated Management of Childhood
 ### IMCI Triage and Assessment
 
 - General Danger Signs: screens for inability to drink or breastfeed, vomiting everything, convulsions, and lethargy.
-- Vitals and Respiratory Timer: an integrated timer measures age adjusted respiratory rate and flags the fast breathing threshold.
-- Multi system symptom assessment, covering:
+- Vitals and Respiratory Timer: an integrated timer measures age-adjusted respiratory rate and flags the fast breathing threshold.
+- Multi-system symptom assessment, covering:
   - Respiratory and cough, classifying into Severe Pneumonia, Pneumonia, or No Pneumonia.
   - Diarrhea and dehydration, classifying into Severe Dehydration (Plan C), Some Dehydration (Plan B), or No Dehydration (Plan A), with ORS and zinc dosing guidance.
   - Fever and malaria, including interpretation of malaria rapid diagnostic tests and checks for stiff neck or bulging fontanelle.
@@ -19,7 +20,7 @@ The app follows the World Health Organization Integrated Management of Childhood
 
 ### AI Decision Support Assistant
 
-Chat conversations are stored locally and linked to individual patient profiles in the Room database. The assistant provides guidance on IMCI protocol classifications, first dose antibiotic calculations, and hospital referral criteria.
+Chat conversations are stored locally and linked to individual patient profiles in the Room database. The assistant provides guidance on IMCI protocol classifications, first-dose antibiotic calculations, and hospital referral criteria.
 
 ### Immunization Tracker
 
@@ -49,7 +50,7 @@ The app is built with Clean Architecture and MVVM.
 - Async and reactive state: Kotlin Coroutines, StateFlow, and SharedFlow
 - Build system: Gradle, JDK 17
 
-Data flows from the Compose UI layer down through Hilt scoped ViewModels, into repositories, and finally into either Room (patients, users, chat, immunization records) or DataStore (session and theme preferences).
+Data flows from the Compose UI layer down through Hilt-scoped ViewModels, into repositories, and finally into either Room (patients, users, chat, immunization records) or DataStore (session and theme preferences).
 
 ## Project Structure
 
